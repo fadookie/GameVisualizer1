@@ -142,6 +142,7 @@
         <key>fileList</key>
         <array>
             <filename>SpaceInvader1</filename>
+            <filename>SpaceInvaderBullet</filename>
         </array>
         <key>ignoreFileList</key>
         <array/>
