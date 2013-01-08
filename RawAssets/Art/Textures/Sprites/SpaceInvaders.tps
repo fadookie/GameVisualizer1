@@ -10,7 +10,7 @@
         <key>autoSDSettings</key>
         <array/>
         <key>allowRotation</key>
-        <true/>
+        <false/>
         <key>quiet</key>
         <false/>
         <key>premultiplyAlpha</key>
@@ -20,7 +20,7 @@
         <key>dpi</key>
         <uint>72</uint>
         <key>dataFormat</key>
-        <string>unity</string>
+        <string>cocos2d</string>
         <key>textureFileName</key>
         <filename>../../../../Assets/Art/Textures/Sprites/SpaceInvaders.png</filename>
         <key>flipPVR</key>
@@ -111,7 +111,7 @@
             <enum type="AndEngine::MagFilter">MagLinear</enum>
         </struct>
         <key>dataFileName</key>
-        <filename>../../../../Assets/Art/Textures/Sprites/SpaceInvaders.txt</filename>
+        <filename>../../../../Assets/Art/Textures/Sprites/SpaceInvaders.xml</filename>
         <key>mainExtension</key>
         <string></string>
         <key>forceIdenticalLayout</key>
