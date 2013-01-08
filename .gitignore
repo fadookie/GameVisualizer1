@@ -6,3 +6,7 @@
 *.csproj
 *.unityproj
 *.sln
+*.suo
+*.user
+*.pidb
+*.userprefs
