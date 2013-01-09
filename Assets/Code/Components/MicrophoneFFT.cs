@@ -24,6 +24,7 @@ public class MicrophoneFFT : MonoBehaviour
 	private int graphIndex = 0; //Loop counter for when to sample
 	
 	public float amplitudeThreshhold = 70.0f;
+	public uint amplitudeEventChannel = 1u;
   
 	//Use this for initialization  
 	void Start ()
@@ -76,9 +77,12 @@ public class MicrophoneFFT : MonoBehaviour
 			StringBuilder builder = new StringBuilder ();
 			int numNonZeroData = 0;
 			
-			//Graph instantaneous amplitude
+			//Track instantaneous amplitude
 			{
-				float graphAmplitude = MathHelper.Map(audioData[(audioBufferPosition + arraySize - 1) % arraySize], -0.5f, 0.5f, 0.0f, 200.0f);	
+				float amplitude = audioData[(audioBufferPosition + arraySize - 1) % arraySize];
+				
+				//Graph it
+				float graphAmplitude = MathHelper.Map(amplitude, -0.5f, 0.5f, 0.0f, 200.0f);	
 				if (graphAmplitude > amplitudeThreshhold) {
 					graph.SetColors(Color.red, Color.red);
 				} else {
@@ -88,6 +92,9 @@ public class MicrophoneFFT : MonoBehaviour
 				if (audioData[audioBufferPosition] != 0.0f) {
 					//Debug.Log(string.Format("Graph = data[{0}] {1} -> {2}", audioBufferPosition, audioData[audioBufferPosition], graphAmplitude));
 				}
+				
+				//Broadcast notification
+				ReactiveManager.Instance.amplitudeEvent(amplitudeEventChannel, amplitude, graphAmplitude > amplitudeThreshhold);
 			}
 			
 			//Send the buffered audio through FFT.
