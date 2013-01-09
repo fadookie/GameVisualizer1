@@ -13,12 +13,14 @@ public class ReactionController : Reactive {
 	public Color overAmplitudeThresholdColor = Color.red;
 	
 	public bool amplitudeControlsSize = false;
-	public float minSize = 1.0f;
-	public float maxSize = 100.0f;
+	public float minSizeMultiplier = 1.0f;
+	public float maxSizeMultiplier = 100.0f;
+	private Vector3 defaultScale;
 
 	// Use this for initialization
 	void Start () {
 		ReactiveManager.Instance.registerListener(this, getChannels());
+		defaultScale = new Vector3(gameObject.transform.lossyScale.x, gameObject.transform.lossyScale.y, gameObject.transform.lossyScale.z);
 	}
 	
 	// Update is called once per frame
@@ -42,6 +44,8 @@ public class ReactionController : Reactive {
 		
 		//Sprite size based on amplitude
 		if (amplitudeControlsSize) {
+			float newScale = MathHelper.Map(amp, -0.5f, 0.5f, minSizeMultiplier, maxSizeMultiplier);
+			gameObject.transform.localScale = new Vector3(defaultScale.x * newScale, defaultScale.y * newScale, defaultScale.z * newScale);
 		}
 	}
 	
