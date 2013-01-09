@@ -20,6 +20,8 @@ public class MicrophoneFFT : MonoBehaviour
 	private float[] audioData = null;
 	private ComplexF[] fftInData = null;
 	LineRenderer graph = null; //Spectograph for debugging
+	private int graphCounter = 0; //Simple timer for when to sample for the graph
+	private int graphIndex = 0; //Loop counter for when to sample
   
 	//Use this for initialization  
 	void Start ()
@@ -63,6 +65,7 @@ public class MicrophoneFFT : MonoBehaviour
 			int fftInDataSize = Mathf.NextPowerOfTwo(newSamples);
 			if (fftInDataSize > 4096) {
 				//We have too much data for the FFT library to process in a single frame, try to pick it up later
+				//FIXME need to profile this but this is probably a dumb and latency-prone way of handling this, better to discard old data and keep pace with realtime events
 				fftInDataSize = 4096;
 			}
 			fftInData = new ComplexF[fftInDataSize];
@@ -78,7 +81,7 @@ public class MicrophoneFFT : MonoBehaviour
 				
 				//Graphing stuff
 				int graphSamplingRate = arraySize / 200;
-				int graphIndex = 0; //Loop counter for when to sample
+
 				
 				Debug.Log (string.Format ("for (i = {0}; i!= {1}; i += {2} % foo)", previousAudioBufferPosition, audioBufferPosition, incrementAmount));
 				
@@ -86,7 +89,7 @@ public class MicrophoneFFT : MonoBehaviour
 				//Bail if we're going to overrun the FFT buffer
 				//FIXME: an off-by-one error causes an infinite loop here, should make this more robust
 				int i = previousAudioBufferPosition; 
-				for (int graphCounter = 0;
+				for (;
 					i != audioBufferPosition;
 					i = (i + incrementAmount) % arraySize, fftInDataIndex++, graphCounter++) { 
 					
@@ -101,17 +104,20 @@ public class MicrophoneFFT : MonoBehaviour
 					
 					//Update graph if needed
 					if (graphCounter >= graphSamplingRate && graphIndex < 200) {
+						float graphAmplitude = MathHelper.Map (audioData [i], -1.0f, 1.0f, 0.0f, 100.0f);
 						graph.SetPosition (
 							graphIndex,
 							new Vector3 (
 								graphIndex,
-								MathHelper.Map (audioData [i], -1.0f, 1.0f, 0.0f, 100.0f),
+								graphAmplitude,
 								0
 							)
 						);
 						graphIndex++;
 						graphCounter = 0;
-						//builder.Append (audioData[i] * 100).Append (", ");
+						builder.Append (graphAmplitude).Append (", ");
+					} else if (graphIndex >= 200) {
+						graphIndex = 0;
 					}
 				
 					//Count non-zero rows for debugging so I can watch the buffer fill up
@@ -129,7 +135,7 @@ public class MicrophoneFFT : MonoBehaviour
 				previousAudioBufferPosition = i;
 			
 				Debug.Log (string.Format ("Got data, {0}/{1} were non-zero, position={2}", numNonZeroData, arraySize, audioBufferPosition));
-				//Debug.Log (builder);
+				Debug.Log (builder);
 				Debug.Log ("===============\n\n");
 			}
 		}
