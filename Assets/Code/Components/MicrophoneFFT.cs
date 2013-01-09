@@ -102,13 +102,13 @@ public class MicrophoneFFT : MonoBehaviour
 					//Update graph if needed
 					if (graphCounter >= graphSamplingRate && graphIndex < 200) {
 						graph.SetPosition (
-						graphIndex,
-						new Vector3 (
 							graphIndex,
-							MathHelper.Map (audioData [i], -1.0f, 1.0f, 0.0f, 100.0f),
-							0
-						)
-					);
+							new Vector3 (
+								graphIndex,
+								MathHelper.Map (audioData [i], -1.0f, 1.0f, 0.0f, 100.0f),
+								0
+							)
+						);
 						graphIndex++;
 						graphCounter = 0;
 						//builder.Append (audioData[i] * 100).Append (", ");
@@ -124,14 +124,14 @@ public class MicrophoneFFT : MonoBehaviour
 				//Fourier.FFT_Quick (fftInData, fftInDataIndex + 1, FourierDirection.Forward);
 				Fourier.FFT (fftInData, FourierDirection.Forward);
 				
-				Debug.Log ("i == " + audioBufferPosition);
+				Debug.Log ("i == " + i + " delta from current: " + (audioBufferPosition - i));
 				
 				previousAudioBufferPosition = i;
-			}
 			
-			Debug.Log (string.Format ("Got data, {0}/{1} were non-zero, position={2}", numNonZeroData, arraySize, audioBufferPosition));
-			Debug.Log (builder);
-			Debug.Log ("===============\n\n");
+				Debug.Log (string.Format ("Got data, {0}/{1} were non-zero, position={2}", numNonZeroData, arraySize, audioBufferPosition));
+				//Debug.Log (builder);
+				Debug.Log ("===============\n\n");
+			}
 		}
 	}
 	
