@@ -16,6 +16,7 @@ public class MicrophoneFFT : MonoBehaviour
   
 	//A handle to the attached AudioSource  
 	private AudioSource goAudioSource = null;
+	private int previousAudioBufferPosition = 0;
 	private float[] audioData = null;
 	private ComplexF[] fftInData = null;
 	LineRenderer graph = null; //Spectograph for debugging
@@ -26,13 +27,13 @@ public class MicrophoneFFT : MonoBehaviour
 		//Check if there is at least one microphone connected  
 		if (Microphone.devices.Length <= 0) {  
 			//Throw a warning message at the console if there isn't  
-			Debug.LogWarning("Microphone not connected!");  
+			Debug.LogWarning ("Microphone not connected!");  
 		} else { //At least one microphone is present  
 			//Set 'micConnected' to true  
 			micConnected = true;  
   
 			//Get the default microphone recording capabilities  
-			Microphone.GetDeviceCaps(null, out minFreq, out maxFreq);  
+			Microphone.GetDeviceCaps (null, out minFreq, out maxFreq);  
   
 			//According to the documentation, if minFreq and maxFreq are zero, the microphone supports any frequency...  
 			if (minFreq == 0 && maxFreq == 0) {  
@@ -41,8 +42,8 @@ public class MicrophoneFFT : MonoBehaviour
 			}  
   
 			//Get the attached AudioSource component  
-			goAudioSource = this.GetComponent<AudioSource>();  
-			graph = gameObject.GetComponent<LineRenderer>();
+			goAudioSource = this.GetComponent<AudioSource> ();  
+			graph = gameObject.GetComponent<LineRenderer> ();
 		}  
 	}
     
@@ -53,50 +54,82 @@ public class MicrophoneFFT : MonoBehaviour
 			int arraySize = goAudioSource.clip.samples * goAudioSource.clip.channels;
 			if (null == audioData) {
 				audioData = new float[arraySize];
-				//Initialize the FFT in buffer for only once channel for now
-				fftInData = new ComplexF[goAudioSource.clip.samples];
 				graph.SetVertexCount (200);
 			}
 			
 			goAudioSource.clip.GetData (audioData, 0); //Copy current audio buffer into audioData
-			int writePosition = Microphone.GetPosition (null); //Get current write position into the audio ring buffer
+			int audioBufferPosition = Microphone.GetPosition (null); //Get current write position into the audio ring buffer
+			int newSamples = Mathf.Abs (audioBufferPosition - previousAudioBufferPosition);
+			int fftInDataSize = Mathf.NextPowerOfTwo(newSamples);
+			if (fftInDataSize > 4096) {
+				//We have too much data for the FFT library to process in a single frame, try to pick it up later
+				fftInDataSize = 4096;
+			}
+			fftInData = new ComplexF[fftInDataSize];
 			
 			//Debugging info
 			StringBuilder builder = new StringBuilder ();
 			int numNonZeroData = 0;
 			
-			//Loop over the ring buffer
-			{
-				int graphIndex = 0;
-				//int incrementAmount = 1;
-				int incrementAmount = goAudioSource.clip.channels; //This would be so we only process the first (presumably, the left) channel
-				int fftSamplingRate = arraySize / 200;
-				int fftSampleCounter = 0;
-				Debug.Log (string.Format ("i = {0} inc = {1}", (writePosition + 1), incrementAmount));
+			//Send the buffered audio through FFT.
+			if (previousAudioBufferPosition != audioBufferPosition) {
+				int incrementAmount = goAudioSource.clip.channels; //We only process the first (presumably, the left) channel. If set to 1, it will process all channels in the buffer.
+				int fftInDataIndex = 0;
 				
-				//Loop over the ring buffer, at the interval specified by incrementAmount
-				for (int i = writePosition + 1; i != writePosition; i = (i + incrementAmount) % arraySize, fftSampleCounter++) { 
-					if (fftSampleCounter >= fftSamplingRate && graphIndex < 200) {
+				//Graphing stuff
+				int graphSamplingRate = arraySize / 200;
+				int graphIndex = 0; //Loop counter for when to sample
+				
+				Debug.Log (string.Format ("for (i = {0}; i!= {1}; i += {2} % foo)", previousAudioBufferPosition, audioBufferPosition, incrementAmount));
+				
+				//Catch up with the current position in the ring buffer if possible, at the interval specified by incrementAmount
+				//Bail if we're going to overrun the FFT buffer
+				//FIXME: an off-by-one error causes an infinite loop here, should make this more robust
+				int i = previousAudioBufferPosition; 
+				for (int graphCounter = 0;
+					i != audioBufferPosition;
+					i = (i + incrementAmount) % arraySize, fftInDataIndex++, graphCounter++) { 
+					
+					//Copy the new data over to the FFT buffer.
+					if (fftInDataIndex < fftInDataSize) {
+						fftInData [fftInDataIndex].Re = audioData [i];
+					} else {
+						//We can't push any more data to the FFT, rewind i and abort
+						i = (i + arraySize - incrementAmount) % arraySize;
+						break;
+					}
+					
+					//Update graph if needed
+					if (graphCounter >= graphSamplingRate && graphIndex < 200) {
 						graph.SetPosition (
+						graphIndex,
+						new Vector3 (
 							graphIndex,
-							new Vector3 (
-								graphIndex,
-								MathHelper.Map(audioData[i], -1.0f, 1.0f, 0.0f, 100.0f),
-								0
-							)
-						);
+							MathHelper.Map (audioData [i], -1.0f, 1.0f, 0.0f, 100.0f),
+							0
+						)
+					);
 						graphIndex++;
-						fftSampleCounter = 0;
+						graphCounter = 0;
 						//builder.Append (audioData[i] * 100).Append (", ");
 					}
+				
+					//Count non-zero rows for debugging so I can watch the buffer fill up
 					if (audioData [i] != 0.0f) {
 						numNonZeroData++;
 					}
 				}
-				Debug.Log ("i == " + writePosition);
+			
+				//Process FFT.
+				//Fourier.FFT_Quick (fftInData, fftInDataIndex + 1, FourierDirection.Forward);
+				Fourier.FFT (fftInData, FourierDirection.Forward);
+				
+				Debug.Log ("i == " + audioBufferPosition);
+				
+				previousAudioBufferPosition = i;
 			}
 			
-			Debug.Log (string.Format ("Got data, {0}/{1} were non-zero, position={2}", numNonZeroData, arraySize, writePosition));
+			Debug.Log (string.Format ("Got data, {0}/{1} were non-zero, position={2}", numNonZeroData, arraySize, audioBufferPosition));
 			Debug.Log (builder);
 			Debug.Log ("===============\n\n");
 		}

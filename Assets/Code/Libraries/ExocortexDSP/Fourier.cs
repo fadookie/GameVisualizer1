@@ -201,19 +201,23 @@ namespace Exocortex.DSP {
 		static private int[]		GetReversedBits( int numberOfBits ) {
 			Debug.Assert( numberOfBits >= cMinBits );
 			Debug.Assert( numberOfBits <= cMaxBits );
-			if( _reversedBits[ numberOfBits - 1 ] == null ) {
-				int		maxBits = Fourier.Pow2( numberOfBits );
-				int[]	reversedBits = new int[ maxBits ];
-				for( int i = 0; i < maxBits; i ++ ) {
-					int oldBits = i;
-					int newBits = 0;
-					for( int j = 0; j < numberOfBits; j ++ ) {
-						newBits = ( newBits << 1 ) | ( oldBits & 1 );
-						oldBits = ( oldBits >> 1 );
+			try {
+				if( _reversedBits[ numberOfBits - 1 ] == null ) {
+					int		maxBits = Fourier.Pow2( numberOfBits );
+					int[]	reversedBits = new int[ maxBits ];
+					for( int i = 0; i < maxBits; i ++ ) {
+						int oldBits = i;
+						int newBits = 0;
+						for( int j = 0; j < numberOfBits; j ++ ) {
+							newBits = ( newBits << 1 ) | ( oldBits & 1 );
+							oldBits = ( oldBits >> 1 );
+						}
+						reversedBits[ i ] = newBits;
 					}
-					reversedBits[ i ] = newBits;
+					_reversedBits[ numberOfBits - 1 ] = reversedBits;
 				}
-				_reversedBits[ numberOfBits - 1 ] = reversedBits;
+			} catch (IndexOutOfRangeException iore) {
+				UnityEngine.Debug.Log("Oh fuck");	
 			}
 			return	_reversedBits[ numberOfBits - 1 ];
 		}
