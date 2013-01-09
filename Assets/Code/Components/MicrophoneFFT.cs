@@ -19,9 +19,11 @@ public class MicrophoneFFT : MonoBehaviour
 	private int previousAudioBufferPosition = 0;
 	private float[] audioData = null;
 	private ComplexF[] fftInData = null;
-	LineRenderer graph = null; //Spectograph for debugging
+	private LineRenderer graph = null; //Spectograph for debugging
 	private int graphCounter = 0; //Simple timer for when to sample for the graph
 	private int graphIndex = 0; //Loop counter for when to sample
+	
+	public float amplitudeThreshhold = 70.0f;
   
 	//Use this for initialization  
 	void Start ()
@@ -74,6 +76,20 @@ public class MicrophoneFFT : MonoBehaviour
 			StringBuilder builder = new StringBuilder ();
 			int numNonZeroData = 0;
 			
+			//Graph instantaneous amplitude
+			{
+				float graphAmplitude = MathHelper.Map(audioData[(audioBufferPosition + arraySize - 1) % arraySize], -0.5f, 0.5f, 0.0f, 200.0f);	
+				if (graphAmplitude > amplitudeThreshhold) {
+					graph.SetColors(Color.red, Color.red);
+				} else {
+					graph.SetColors(Color.green, Color.green);
+				}
+				graph.SetPosition(1, new Vector3(0, graphAmplitude, 0));
+				if (audioData[audioBufferPosition] != 0.0f) {
+					//Debug.Log(string.Format("Graph = data[{0}] {1} -> {2}", audioBufferPosition, audioData[audioBufferPosition], graphAmplitude));
+				}
+			}
+			
 			//Send the buffered audio through FFT.
 			if (previousAudioBufferPosition != audioBufferPosition) {
 				int incrementAmount = goAudioSource.clip.channels; //We only process the first (presumably, the left) channel. If set to 1, it will process all channels in the buffer.
@@ -83,7 +99,7 @@ public class MicrophoneFFT : MonoBehaviour
 				int graphSamplingRate = arraySize / 200;
 
 				
-				Debug.Log (string.Format ("for (i = {0}; i!= {1}; i += {2} % foo)", previousAudioBufferPosition, audioBufferPosition, incrementAmount));
+				//Debug.Log (string.Format ("for (i = {0}; i!= {1}; i += {2} % foo)", previousAudioBufferPosition, audioBufferPosition, incrementAmount));
 				
 				//Catch up with the current position in the ring buffer if possible, at the interval specified by incrementAmount
 				//Bail if we're going to overrun the FFT buffer
@@ -103,6 +119,7 @@ public class MicrophoneFFT : MonoBehaviour
 					}
 					
 					//Update graph if needed
+					/*
 					if (graphCounter >= graphSamplingRate && graphIndex < 200) {
 						float graphAmplitude = MathHelper.Map (audioData [i], -1.0f, 1.0f, 0.0f, 100.0f);
 						graph.SetPosition (
@@ -119,6 +136,7 @@ public class MicrophoneFFT : MonoBehaviour
 					} else if (graphIndex >= 200) {
 						graphIndex = 0;
 					}
+					*/
 				
 					//Count non-zero rows for debugging so I can watch the buffer fill up
 					if (audioData [i] != 0.0f) {
@@ -130,13 +148,13 @@ public class MicrophoneFFT : MonoBehaviour
 				//Fourier.FFT_Quick (fftInData, fftInDataIndex + 1, FourierDirection.Forward);
 				Fourier.FFT (fftInData, FourierDirection.Forward);
 				
-				Debug.Log ("i == " + i + " delta from current: " + (audioBufferPosition - i));
+				//Debug.Log ("i == " + i + " delta from current: " + (audioBufferPosition - i));
 				
 				previousAudioBufferPosition = i;
 			
-				Debug.Log (string.Format ("Got data, {0}/{1} were non-zero, position={2}", numNonZeroData, arraySize, audioBufferPosition));
-				Debug.Log (builder);
-				Debug.Log ("===============\n\n");
+				//Debug.Log (string.Format ("Got data, {0}/{1} were non-zero, position={2}", numNonZeroData, arraySize, audioBufferPosition));
+				//Debug.Log (builder);
+				//Debug.Log ("===============\n\n");
 			}
 		}
 	}
