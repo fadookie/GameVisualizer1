@@ -15,11 +15,14 @@ public class TempoManager : MonoSingleton<TempoManager>
 	
 	public enum TempoManagerAuxState {
 		NONE,
+		TAP_SYNC, //Sync static BPM by detecting tap
 		TAP_CAPTURE //Sample beat button over time to figure out BPM
 	}
 	
 	public TempoManagerState pendingMainState;
 	public TempoManagerAuxState pendingAuxState;
+	
+	public string beatKey = "space";
 	
 	private TempoManagerState _mainState = TempoManagerState.STATIC;
 	/// <summary>
@@ -51,7 +54,12 @@ public class TempoManager : MonoSingleton<TempoManager>
 		}
 	}
 	
-	public float BPM;
+	private bool autoBeat = false;
+	
+	public float pendingBPM;
+	private float BPM;
+	public bool syncNow = false;
+		
 	public uint tempoEventChannel = 1u;
 	
 	public string tempoManagerStatus;
@@ -70,20 +78,53 @@ public class TempoManager : MonoSingleton<TempoManager>
 	
 	void Update() {
 		//Process state changes from GUI
+		if (pendingBPM != BPM) {
+			BPM = pendingBPM;
+			syncBPM();
+		}
 		if (pendingMainState != _mainState) {
 			MainState = pendingMainState;
 		}
 		if (pendingAuxState != _auxState) {
 			AuxState = pendingAuxState;
 		}
+		if (syncNow || Input.GetKeyDown(beatKey)) { //Sync now button/key
+			syncBPM();
+			syncNow = false;
+		}
 		
 		switch (_mainState) {
 			case TempoManagerState.MANUAL_TAP:
-				if (Input.GetKeyDown("space")) {
+				if (autoBeat) {
+					CancelInvoke();
+					autoBeat = false;
+				}
+			
+				if (Input.GetKeyDown(beatKey)) {
 					beat();
 				}
 				break;
+				
+			case TempoManagerState.STATIC:
+				if (!autoBeat) {
+					syncBPM();
+				}
+				break;
 		}
+	}
+	
+	/// <summary>
+	/// Restart BPM timer
+	/// </summary>
+	private void syncBPM() {
+		CancelInvoke();
+		InvokeRepeating("beat", 0, beatsPerMinuteToDelay(BPM));
+		autoBeat = true;	
+	}
+	
+	private float beatsPerMinuteToDelay(float beatsPerMinute) {
+		//beats per second = beatsPerMinute / 60
+		return 1.0f / (beatsPerMinute / 60.0f);
 	}
 	
 	private void beat() {
