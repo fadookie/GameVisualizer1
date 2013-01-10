@@ -718,7 +718,7 @@ public class OTAnimatingSprite : OTSprite
     {
         if (animation != null && animation.isReady)
         {
-            if (frameIndex >= 0 && frameIndex < animation.frameCount)
+            if (frameIndex >= 0 && (null != spriteContainer && frameIndex < spriteContainer.frameCount))
             {
                 if (isPlaying)
                     Pauze();
