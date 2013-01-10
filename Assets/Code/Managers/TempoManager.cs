@@ -62,21 +62,33 @@ public class TempoManager : MonoSingleton<TempoManager>
 	private bool autoBeat = false;
 	
 	public float pendingBPM;
-	private float BPM;
+	private float _bpm;
+	private float BPM {
+		get {return _bpm;}
+		set {
+			_bpm = value;
+			pendingBPM = value;
+		}
+	}
 	public bool syncNow = false;
 		
 	public uint tempoEventChannel = 1u;
 	
 	public struct BPMCapturePoint {
-		float timestamp;
-		float runningAverageBPM;
+		public float timestamp;
+		public float runningAverageBPM;
 		
 		public BPMCapturePoint(float timestamp, float runningAverageBPM) {
 			this.timestamp = timestamp;
 			this.runningAverageBPM = runningAverageBPM;
 		}
+		
+		public string ToString() {
+			return string.Format("BPMCapturePoint{{ timestamp:{0}, runningAverageBPM:{1} }}", timestamp, runningAverageBPM);
+		}
 	}	
 	public List<BPMCapturePoint> bpmCaptureCache = new List<BPMCapturePoint>();
+	public int bpmCaptureCacheSize = 10;
 	
 	public override void Init() {
 	}
@@ -113,9 +125,17 @@ public class TempoManager : MonoSingleton<TempoManager>
 		}
 		
 		if (Input.GetKeyDown(tempoLockKey)) {
+			if (TempoManagerAuxState.TAP_CAPTURE == _auxState) {
+				//Transitioning from capture to lock, auto-sync BPM
+				syncBPM();
+			}
 			AuxState = TempoManagerAuxState.LOCKED;
 			
 		} else if (Input.GetKeyDown(tempoSyncKey)) {
+			if (TempoManagerAuxState.TAP_CAPTURE == _auxState) {
+				//Transitioning from capture to sync, auto-sync BPM
+				syncBPM();
+			}
 			AuxState = TempoManagerAuxState.TAP_SYNC;
 			
 		} else if (Input.GetKeyDown(tempoCaptureKey)) {
@@ -139,9 +159,6 @@ public class TempoManager : MonoSingleton<TempoManager>
 				if (!autoBeat) {
 					syncBPM();
 				}
-				if (Input.GetKeyDown(tempoCaptureKey)) {
-					AuxState = TempoManagerAuxState.TAP_CAPTURE;
-				}
 				break;
 		}
 		
@@ -162,11 +179,56 @@ public class TempoManager : MonoSingleton<TempoManager>
 			case TempoManagerAuxState.TAP_CAPTURE:
 				if (Input.GetKeyDown(beatKey)) {
 					bpmCaptureCache.Add(new BPMCapturePoint(Time.time, 0));
-					Debug.Log(bpmCaptureCache);
+					// calculate the current BPM
+					if (bpmCaptureCache.Count > 1) {
+						//Struct can't be edited so we have to replace it with an updated one
+						bpmCaptureCache[bpmCaptureCache.Count - 1] = new BPMCapturePoint(
+							bpmCaptureCache[bpmCaptureCache.Count - 1].timestamp,
+							60/(bpmCaptureCache[bpmCaptureCache.Count -1].timestamp - bpmCaptureCache[bpmCaptureCache.Count -2].timestamp)
+						);
+					}
+					// bump off the oldest member of the cache (treat as a queue)
+					if (bpmCaptureCache.Count > bpmCaptureCacheSize)
+					{
+						bpmCaptureCache.RemoveAt(0);
+					}
+					BPM = calculateBPM(bpmCaptureCache);
+					Debug.Log(string.Format("BPM = {0}, {1}", BPM, bpmCaptureCache));
 				}
 				break;
 		}
 	}
+	
+	float calculateBPM(List<BPMCapturePoint> theBPMcache)
+	{
+	    float lowestValue  = 0;
+	    float highestValue = 0;
+	    float total        = 0;
+	    for (int i=0; i<theBPMcache.Count; i++)
+	    {
+	        total += theBPMcache[i].runningAverageBPM;
+	        if (i == 0)
+	        {
+	            lowestValue = highestValue = theBPMcache[i].runningAverageBPM;
+	        } else {
+	            lowestValue  = Mathf.Min(lowestValue, theBPMcache[i].runningAverageBPM);
+	            highestValue = Mathf.Max(highestValue, theBPMcache[i].runningAverageBPM);
+	        }
+	    }
+	        
+	    // toss the lowest and highest values (if more than 2 samples)
+	    //These were rounded but I'm keeping them as-is for precision
+	    float BPMAverage;
+	    if (theBPMcache.Count > 2)
+	    {
+	        BPMAverage = ((total - lowestValue - highestValue)/(float)(theBPMcache.Count-2));
+	    } else {
+	        BPMAverage = (total/(float)theBPMcache.Count);
+	    }
+	    return BPMAverage; /// 2.0f);
+	}
+
+
 	
 	/// <summary>
 	/// Restart BPM timer
