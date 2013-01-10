@@ -67,6 +67,17 @@ public class TempoManager : MonoSingleton<TempoManager>
 		
 	public uint tempoEventChannel = 1u;
 	
+	public struct BPMCapturePoint {
+		float timestamp;
+		float runningAverageBPM;
+		
+		public BPMCapturePoint(float timestamp, float runningAverageBPM) {
+			this.timestamp = timestamp;
+			this.runningAverageBPM = runningAverageBPM;
+		}
+	}	
+	public List<BPMCapturePoint> bpmCaptureCache = new List<BPMCapturePoint>();
+	
     private static TempoManager instance;
     
 	public override void Init() {
@@ -124,10 +135,6 @@ public class TempoManager : MonoSingleton<TempoManager>
 				if (TempoManagerAuxState.TAP_SYNC != _auxState) {
 					AuxState = TempoManagerAuxState.TAP_SYNC;
 				}
-			
-				if (Input.GetKeyDown(beatKey)) {
-					beat();
-				}
 				break;
 				
 			case TempoManagerState.FIXED:
@@ -146,10 +153,19 @@ public class TempoManager : MonoSingleton<TempoManager>
 			//TempoManagerAuxState.LOCKED has no behavior by definition
 			case TempoManagerAuxState.TAP_SYNC:
 				if (Input.GetKeyDown(beatKey)) {
-					syncBPM();
+					if (TempoManagerState.FIXED == _mainState) {
+						syncBPM();
+					} else if (TempoManagerState.MANUAL_TAP == _mainState) {
+						beat();
+					}
 				}
 				break;
+				
 			case TempoManagerAuxState.TAP_CAPTURE:
+				if (Input.GetKeyDown(beatKey)) {
+					bpmCaptureCache.Add(new BPMCapturePoint(Time.time, 0));
+					Debug.Log(bpmCaptureCache);
+				}
 				break;
 		}
 	}
@@ -163,9 +179,13 @@ public class TempoManager : MonoSingleton<TempoManager>
 		autoBeat = true;	
 	}
 	
-	private float beatsPerMinuteToDelay(float beatsPerMinute) {
+	public static float beatsPerMinuteToDelay(float beatsPerMinute) {
 		//beats per second = beatsPerMinute / 60
 		return 1.0f / (beatsPerMinute / 60.0f);
+	}
+	
+	public static float beatsPerMinuteToAnimSpeed(float beatsPerMinute, float fps) {
+		return fps / (beatsPerMinute / 60.0f);
 	}
 	
 	private void beat() {
@@ -189,3 +209,4 @@ public class TempoManager : MonoSingleton<TempoManager>
 	}
 	
 }
+

@@ -8,7 +8,7 @@ using UnityEngine;
 using System;
 
 public abstract class Reactive : MonoBehaviour {
-	public int[] channels; //The inspector doesn't work with uints. It's probably going to wrap if you set one of these to negative so I'd avoid it.
+	public int[] channels = new int[1]; //The inspector doesn't work with uints. It's probably going to wrap if you set one of these to negative so I'd avoid it.
 	
 	abstract public void reactToAmplitude(uint channel, float amp, bool overThreshold);
 	abstract public void reactToBeat(float currentBPM); //Called every beat

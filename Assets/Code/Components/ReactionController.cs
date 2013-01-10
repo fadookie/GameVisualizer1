@@ -6,6 +6,8 @@
 using UnityEngine;
 using System.Collections;
 
+[RequireComponent (typeof(OTAnimatingSprite))]
+
 public class ReactionController : Reactive {
 
 	public bool amplitudeControlsColor = false;
@@ -14,11 +16,26 @@ public class ReactionController : Reactive {
 	
 	public bool amplitudeControlsSize = false;
 	public float minSizeMultiplier = 1.0f;
-	public float maxSizeMultiplier = 100.0f;
+	public float maxSizeMultiplier = 1.7f;
 	
 	public bool beatPulsesSize = false;
-	public float beatPulseDuration = 0.5f;
+	public float beatPulseDuration = 0.05f;
 	private bool pulseInProgress = false;
+	
+	private int lastFrame = 0;
+	public bool beatSetsAnimationSpeed = false;
+	private bool _beatSetsAnimationSpeed = false;
+	public bool BeatSetsAnimationSpeed {
+		get { return beatSetsAnimationSpeed; }
+		set {
+			_beatSetsAnimationSpeed = value;
+			if (_beatSetsAnimationSpeed) {
+				gameObject.GetComponent<OTAnimatingSprite>().Pauze();
+			} else {
+				gameObject.GetComponent<OTAnimatingSprite>().Play();
+			}
+		}
+	}
 	
 	private Vector3 defaultScale;
 
@@ -30,7 +47,10 @@ public class ReactionController : Reactive {
 	
 	// Update is called once per frame
 	void Update () {
-	
+		//Process pending writes
+		if (BeatSetsAnimationSpeed != beatSetsAnimationSpeed) {
+			BeatSetsAnimationSpeed = beatSetsAnimationSpeed;
+		}
 	}
 	
 	#region Reactive event handlers
@@ -55,7 +75,6 @@ public class ReactionController : Reactive {
 	}
 	
 	public override void reactToBeat(float currentBPM) {
-		Debug.Log("beat recieved, bpm = " + currentBPM);
 		if (beatPulsesSize) {
 			gameObject.transform.localScale = new Vector3(defaultScale.x * maxSizeMultiplier, defaultScale.y * maxSizeMultiplier, defaultScale.z * maxSizeMultiplier);
 			if (pulseInProgress) {
@@ -63,6 +82,17 @@ public class ReactionController : Reactive {
 			}
 			Invoke("resetSize", beatPulseDuration);
 			pulseInProgress = true;
+		}
+		
+		OTAnimatingSprite sprite = gameObject.GetComponent<OTAnimatingSprite>();
+		if (BeatSetsAnimationSpeed) {
+			lastFrame++;
+			if (lastFrame >= sprite.animation.frameCount) lastFrame = 0;
+			sprite.ShowFrame(lastFrame);
+			Debug.Log("ShowFrame("+lastFrame+")");
+			/*
+			sprite.speed = TempoManager.beatsPerMinuteToAnimSpeed(currentBPM, sprite.animation.fps);
+			*/
 		}
 	}
 	
