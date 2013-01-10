@@ -9,12 +9,12 @@ public class TempoManager : MonoSingleton<TempoManager>
 {
 	public enum TempoManagerState {
 		MANUAL_TAP, //Beats only occur when beat button is pressed by VJ
-		STATIC, //Use a BPM set in the editor or by tap capture
+		FIXED, //Use a BPM set in the editor or by tap capture
 		AUTODETECT //Use BPM detection algorithm from audio input
 	}
 	
 	public enum TempoManagerAuxState {
-		NONE,
+		LOCKED, //Keypressed do not affect tempo settings
 		TAP_SYNC, //Sync static BPM by detecting tap
 		TAP_CAPTURE //Sample beat button over time to figure out BPM
 	}
@@ -23,8 +23,13 @@ public class TempoManager : MonoSingleton<TempoManager>
 	public TempoManagerAuxState pendingAuxState;
 	
 	public string beatKey = "space";
+	public string manualModeKey = "m";
+	public string fixedModeKey = "f";
+	public string tempoCaptureKey = "c";
+	public string tempoSyncKey = "s";
+	public string tempoLockKey = "l";
 	
-	private TempoManagerState _mainState = TempoManagerState.STATIC;
+	private TempoManagerState _mainState = TempoManagerState.FIXED;
 	/// <summary>
 	/// Sets the state.
 	/// </summary>
@@ -35,11 +40,11 @@ public class TempoManager : MonoSingleton<TempoManager>
 		get { return _mainState; }
 		set {
 			_mainState = value;
-			updateTempoManagerStatus();
+			pendingMainState = value; //Update state in UI
 		}
 	}
 	
-	private TempoManagerAuxState _auxState = TempoManagerAuxState.NONE;
+	private TempoManagerAuxState _auxState = TempoManagerAuxState.TAP_SYNC;
 	/// <summary>
 	/// Set an auxilary state, i.e. TAP_CAPTURE which occurs during another state
 	/// </summary>
@@ -50,7 +55,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 		get { return _auxState; }
 		set {
 			_auxState = value;
-			updateTempoManagerStatus();
+			pendingAuxState = value; //Update state in UI
 		}
 	}
 	
@@ -62,8 +67,6 @@ public class TempoManager : MonoSingleton<TempoManager>
 		
 	public uint tempoEventChannel = 1u;
 	
-	public string tempoManagerStatus;
-	
     private static TempoManager instance;
     
 	public override void Init() {
@@ -71,7 +74,7 @@ public class TempoManager : MonoSingleton<TempoManager>
  
 	void Start() {
 		switch(_mainState) {
-			case TempoManagerState.STATIC:
+			case TempoManagerState.FIXED:
 				break;
 		}
 	}
@@ -88,16 +91,38 @@ public class TempoManager : MonoSingleton<TempoManager>
 		if (pendingAuxState != _auxState) {
 			AuxState = pendingAuxState;
 		}
-		if (syncNow || Input.GetKeyDown(beatKey)) { //Sync now button/key
+		if (syncNow) { //Sync now button 
 			syncBPM();
 			syncNow = false;
 		}
 		
+		//Process state change keys if any
+		if (Input.GetKeyDown(manualModeKey)) {
+			MainState = TempoManagerState.MANUAL_TAP;
+		} else if (Input.GetKeyDown(fixedModeKey)) {
+			MainState = TempoManagerState.FIXED;
+		}
+		
+		if (Input.GetKeyDown(tempoLockKey)) {
+			AuxState = TempoManagerAuxState.LOCKED;
+			
+		} else if (Input.GetKeyDown(tempoSyncKey)) {
+			AuxState = TempoManagerAuxState.TAP_SYNC;
+			
+		} else if (Input.GetKeyDown(tempoCaptureKey)) {
+			AuxState = TempoManagerAuxState.TAP_CAPTURE;
+		}
+		
+		//Logic for main state
 		switch (_mainState) {
 			case TempoManagerState.MANUAL_TAP:
 				if (autoBeat) {
 					CancelInvoke();
 					autoBeat = false;
+				}
+				//Automatically enable TAP_SYNC aux mode
+				if (TempoManagerAuxState.TAP_SYNC != _auxState) {
+					AuxState = TempoManagerAuxState.TAP_SYNC;
 				}
 			
 				if (Input.GetKeyDown(beatKey)) {
@@ -105,10 +130,26 @@ public class TempoManager : MonoSingleton<TempoManager>
 				}
 				break;
 				
-			case TempoManagerState.STATIC:
+			case TempoManagerState.FIXED:
 				if (!autoBeat) {
 					syncBPM();
 				}
+				if (Input.GetKeyDown(tempoCaptureKey)) {
+					AuxState = TempoManagerAuxState.TAP_CAPTURE;
+				}
+				break;
+		}
+		
+		
+		//Logic for aux state (input processing mode)
+		switch (_auxState) {
+			//TempoManagerAuxState.LOCKED has no behavior by definition
+			case TempoManagerAuxState.TAP_SYNC:
+				if (Input.GetKeyDown(beatKey)) {
+					syncBPM();
+				}
+				break;
+			case TempoManagerAuxState.TAP_CAPTURE:
 				break;
 		}
 	}
@@ -131,11 +172,20 @@ public class TempoManager : MonoSingleton<TempoManager>
 		ReactiveManager.Instance.beatEvent(tempoEventChannel, BPM);
 	}
 	
-	private void updateTempoManagerStatus() {
-		String mainStateString = Enum.GetName(typeof(TempoManagerState), _mainState);
-		String auxStateString = Enum.GetName(typeof(TempoManagerAuxState), _auxState);
-		
-		tempoManagerStatus = string.Format("{0} : {1}", mainStateString, auxStateString);
+	/// <summary>
+	/// A string representing the current state of the Tempo Manager.
+	/// </summary>
+	/// <value>
+	/// The status line.
+	/// </value>
+	public string StatusLine {
+		get {
+			return string.Format(
+				"{0} : {1}",
+				Enum.GetName(typeof(TempoManagerState), _mainState),
+				Enum.GetName(typeof(TempoManagerAuxState), _auxState)
+			);
+		}
 	}
 	
 }
