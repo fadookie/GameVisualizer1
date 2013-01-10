@@ -8,8 +8,8 @@ using UnityEngine;
 public class ReactiveManager
 {
     private static ReactiveManager instance;
-    private Dictionary<uint, List<Reactive>> _listeners = new Dictionary<uint, List<Reactive>>(); //FIXME if we have performance issues due to hashtable lookup times just make _listners a List of Lists or fixed-size array
-    private List<Reactive> _allChannelListeners = new List<Reactive>(); //Reference to CHANNEL_ALL so we don't have to keep looking it up in the dictionary
+    private Dictionary<uint, HashSet<Reactive>> _listeners = new Dictionary<uint, HashSet<Reactive>>(); //FIXME if we have performance issues due to hashtable lookup times just make _listners a List of Lists or fixed-size array
+    private HashSet<Reactive> _allChannelListeners = new HashSet<Reactive>(); //Reference to CHANNEL_ALL so we don't have to keep looking it up in the dictionary
 
 	public const uint CHANNEL_ALL = 0;
  
@@ -53,10 +53,10 @@ public class ReactiveManager
 	public void registerListener (Reactive listener, uint[] channels)
 	{
 		foreach (uint channel in channels) {
-			List<Reactive> channelListeners;
+			HashSet<Reactive> channelListeners;
 			_listeners.TryGetValue(channel, out channelListeners);
 			if (null == channelListeners) {
-				channelListeners = new List<Reactive>();
+				channelListeners = new HashSet<Reactive>();
 				_listeners.Add(channel, channelListeners);
 			}
 			channelListeners.Add(listener);
@@ -72,7 +72,7 @@ public class ReactiveManager
 	/// </param>
 	public void removeListener (Reactive listener)
 	{
-		foreach (List<Reactive> channelListeners in _listeners.Values) {
+		foreach (HashSet<Reactive> channelListeners in _listeners.Values) {
 			channelListeners.Remove(listener);
 		}
 	}
@@ -84,7 +84,7 @@ public class ReactiveManager
 	
 	public void removeListener (Reactive listener, uint[] channels) {
 		foreach (uint channel in channels) {
-			List<Reactive> channelListeners;
+			HashSet<Reactive> channelListeners;
 			_listeners.TryGetValue(channel, out channelListeners);
 			if (null != channelListeners) {
 				channelListeners.Remove(listener);
@@ -96,21 +96,44 @@ public class ReactiveManager
 	#region Reactive event broadcast methods
 	
 	public void amplitudeEvent(uint channel, float amp, bool overThreshold) {
-		//First notify CHANNEL_ALL
-		foreach (Reactive reactive in _allChannelListeners) {
+		HashSet<Reactive> listeners = getListeners(channel);
+		foreach (Reactive reactive in listeners) {
 			reactive.reactToAmplitude(channel, amp, overThreshold);
 		}
-		if (CHANNEL_ALL == channel) return; //We're done
+	}
+	
+	public void beatEvent(uint channel, float currentBPM) {
+		HashSet<Reactive> listeners = getListeners(channel);
+		foreach (Reactive reactive in listeners) {
+			reactive.reactToBeat(currentBPM);
+		}
+	}
+	
+	/// <summary>
+	/// Gets listeners for a channel, plus all-channel listeners.
+	/// FIXME: We may be creating new HashSets here, if this becomes a performance issue these can be cached during listener registration/removal
+	/// </summary>
+	/// <returns>
+	/// The listeners.
+	/// </returns>
+	/// <param name='channel'>
+	/// Channel.
+	/// </param>
+	private HashSet<Reactive> getListeners(uint channel) {
+		HashSet<Reactive> listeners = _allChannelListeners;
 		
-		//Notify regular listeners
-		List<Reactive> channelListeners;
-		_listeners.TryGetValue(channel, out channelListeners);
-		if (null != channelListeners) {
-			foreach (Reactive reactive in channelListeners) {
-				if (_allChannelListeners.Contains(reactive)) continue; //Don't notify all channel listeners twice
-				reactive.reactToAmplitude(channel, amp, overThreshold);
+		if (CHANNEL_ALL != channel) {
+			//Add in regular listeners
+			HashSet<Reactive> channelListeners = null;
+			_listeners.TryGetValue(channel, out channelListeners);
+			
+			if (null != channelListeners) {
+				listeners = new HashSet<Reactive>(_allChannelListeners);
+				listeners.UnionWith(channelListeners);
 			}
 		}
+		
+		return listeners;
 	}
 	
 	#endregion

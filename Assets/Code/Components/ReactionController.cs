@@ -15,6 +15,11 @@ public class ReactionController : Reactive {
 	public bool amplitudeControlsSize = false;
 	public float minSizeMultiplier = 1.0f;
 	public float maxSizeMultiplier = 100.0f;
+	
+	public bool beatPulsesSize = false;
+	public float beatPulseDuration = 0.5f;
+	private bool pulseInProgress = false;
+	
 	private Vector3 defaultScale;
 
 	// Use this for initialization
@@ -47,6 +52,23 @@ public class ReactionController : Reactive {
 			float newScale = MathHelper.Map(amp, -0.5f, 0.5f, minSizeMultiplier, maxSizeMultiplier);
 			gameObject.transform.localScale = new Vector3(defaultScale.x * newScale, defaultScale.y * newScale, defaultScale.z * newScale);
 		}
+	}
+	
+	public override void reactToBeat(float currentBPM) {
+		Debug.Log("beat recieved, bpm = " + currentBPM);
+		if (beatPulsesSize) {
+			gameObject.transform.localScale = new Vector3(defaultScale.x * maxSizeMultiplier, defaultScale.y * maxSizeMultiplier, defaultScale.z * maxSizeMultiplier);
+			if (pulseInProgress) {
+				CancelInvoke();
+			}
+			Invoke("resetSize", beatPulseDuration);
+			pulseInProgress = true;
+		}
+	}
+	
+	void resetSize() {
+		pulseInProgress = false;
+		gameObject.transform.localScale = new Vector3(defaultScale.x, defaultScale.y, defaultScale.z);
 	}
 	
 	#endregion

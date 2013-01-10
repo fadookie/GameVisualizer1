@@ -24,7 +24,7 @@ public class MicrophoneFFT : MonoBehaviour
 	private int graphIndex = 0; //Loop counter for when to sample
 	
 	public float amplitudeThreshhold = 70.0f;
-	public uint amplitudeEventChannel = 1u;
+	public uint amplitudeEventChannel = 2u;
   
 	//Use this for initialization  
 	void Start ()
