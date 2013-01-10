@@ -87,8 +87,9 @@ public class ReactionController : Reactive {
 		OTAnimatingSprite sprite = gameObject.GetComponent<OTAnimatingSprite>();
 		if (BeatSetsAnimationSpeed) {
 			lastFrame++;
-			if (lastFrame >= sprite.animation.frameCount) lastFrame = 0;
-			sprite.ShowFrame(lastFrame);
+			//if (lastFrame >= sprite.animation.frameCount) lastFrame = 0;
+			if (lastFrame >= sprite.animation.framesets[0].frameCount) lastFrame = 0;
+			sprite.ShowFrame(sprite.animation.framesets[0].frameNumbers[lastFrame]);
 			Debug.Log("ShowFrame("+lastFrame+")");
 			/*
 			sprite.speed = TempoManager.beatsPerMinuteToAnimSpeed(currentBPM, sprite.animation.fps);

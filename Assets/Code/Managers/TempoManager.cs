@@ -78,8 +78,6 @@ public class TempoManager : MonoSingleton<TempoManager>
 	}	
 	public List<BPMCapturePoint> bpmCaptureCache = new List<BPMCapturePoint>();
 	
-    private static TempoManager instance;
-    
 	public override void Init() {
 	}
  
