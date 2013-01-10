@@ -10,7 +10,10 @@ public class TempoManager : MonoSingleton<TempoManager>
 	public enum TempoManagerState {
 		MANUAL_TAP, //Beats only occur when beat button is pressed by VJ
 		FIXED, //Use a BPM set in the editor or by tap capture
-		AUTODETECT //Use BPM detection algorithm from audio input
+		//TODO:
+		AUTODETECT, //Use BPM detection algorithm from audio input
+		LSDJ_SLAVE, //Sync with LSDJ master clock
+		MIDI_SLAVE //Sync with MIDI master clock
 	}
 	
 	public enum TempoManagerAuxState {
@@ -23,8 +26,10 @@ public class TempoManager : MonoSingleton<TempoManager>
 	public TempoManagerAuxState pendingAuxState;
 	
 	public string beatKey = "space";
+	
 	public string manualModeKey = "m";
 	public string fixedModeKey = "f";
+	
 	public string tempoCaptureKey = "c";
 	public string tempoSyncKey = "s";
 	public string tempoLockKey = "l";
