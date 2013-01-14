@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using System;
 
@@ -11,6 +12,7 @@ public class RoadController : Reactive {
 	
 	private Rect _screenRect = new Rect(0, 0, Screen.width, Screen.height);
 	private Texture2D _texture;
+	private List<Segment> _segmentRenderQueue = new List<Segment>();
 	//public Material material;
 	//var segments      = [];                      // array of road segments
 	public float roadHalfWidth = 2000; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
@@ -83,11 +85,42 @@ public class RoadController : Reactive {
 		Render();
 	}
 	
+	#region Road rendering methods and data structures 
+	
 	struct Polygon {
 		//Only planning to use this to store quads for now.
 		public int submeshIndex;
 		public Vector3[] verts;
 		public int[] tris;
+	}
+	
+	class Segment {
+		public float width;
+		public int lanes;
+		private Polygon _polygon;
+		public Polygon polygon {
+			get { return _polygon; }
+			set { 
+				_polygon = value;
+				_submeshType = (SubmeshType)_polygon.submeshIndex;
+			}
+		}
+		private SubmeshType _submeshType;
+		public SubmeshType submeshType {
+			get { return _submeshType; }
+			set { 
+				_submeshType = value;
+				_polygon.submeshIndex = (int)_submeshType;
+			}
+		}
+	}
+	
+	enum SubmeshType {
+		ROAD_ASPHALT_DARK = 0,
+		ROAD_ASPHALT_LIGHT,
+		ROAD_GRASS_DARK,
+		ROAD_GRASS_LIGHT,
+		ROAD_STRIPE
 	}
 	
 	Polygon makeQuad(int submeshIndex, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
@@ -112,6 +145,14 @@ public class RoadController : Reactive {
 		poly.tris[5] = submeshIndex * 4 + 1;
 		
 		return poly;
+	}
+	
+	float rumbleWidth (float projectedRoadWidth, int lanes) {
+		return projectedRoadWidth/Mathf.Max(6,  2*lanes);
+	}
+	
+	float laneMarkerWidth (float projectedRoadWidth, int lanes) {
+		return projectedRoadWidth/Mathf.Max(32, 8*lanes);
 	}
 	
 	void Render() {
@@ -165,7 +206,11 @@ public class RoadController : Reactive {
 	        mesh.SetTriangles(subPolygons[submeshIndex].tris, submeshIndex);
 		}
         mesh.RecalculateNormals();
+        
+		_segmentRenderQueue.Clear();
 	}
+	
+	#endregion
 	
 	#region Reactive event handlers
 	
