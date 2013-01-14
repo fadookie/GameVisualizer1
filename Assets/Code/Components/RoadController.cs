@@ -12,12 +12,14 @@ public class RoadController : Reactive {
 	
 	private Rect _screenRect = new Rect(0, 0, Screen.width, Screen.height);
 	private Texture2D _texture;
-	private List<Segment> _segmentRenderQueue = new List<Segment>();
 	//public Material material;
-	//var segments      = [];                      // array of road segments
+	public float width;
+	public float height;
+	private List<Segment> _segments = new List<Segment>();
 	public float roadHalfWidth = 2000; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
 	public float segmentLength = 200; // length of a single segment
 	public float rumbleLength = 3;  // number of segments per red/white rumble strip
+	public float trackLength; // z length of entire track (computed)
 	public int lanes = 3; // number of lanes
 	public float fieldOfView = 100; // angle (degrees) for field of view
 	public float cameraHeight = 1000; // z height of camera
@@ -26,7 +28,7 @@ public class RoadController : Reactive {
 	public float playerXOffset = 0; // player x offset from center of road (-1 to 1 to stay independent of roadWidth)
 	public float playerZOffset; // player relative z distance from camera (computed)
 	public float fogDensity = 5; // exponential fog density
-	public float cameraZPosition = 0; // current camera Z position (add playerZ to get player's absolute Z position)
+	public float position = 0; // current camera Z position (add playerZ to get player's absolute Z position)
 	public float speed = 0; // current speed
 	public float maxSpeed = 12000; // top speed (ensure we can't move more than 1 segment in a single frame to make collision detection easier)
 	public float accel; // acceleration rate - tuned until it 'felt' right
@@ -45,6 +47,15 @@ public class RoadController : Reactive {
 		
 		_texture = new Texture2D(320, 112);
 		_texture.filterMode = FilterMode.Point;
+		
+		/*
+		width = Camera.current.pixelWidth;
+		height = Camera.current.pixelHeight;
+		*/
+		width = Screen.width;
+		height = Screen.height;
+		
+		_segments.Add(new Segment());
 		//guiTexture.texture = _texture;
 		
 		/*
@@ -58,7 +69,7 @@ public class RoadController : Reactive {
 	
 	// Update is called once per frame
 	void Update () {
-		cameraZPosition += speed * Time.deltaTime;	
+		position += speed * Time.deltaTime;	
 		float dx = Time.deltaTime * 2 * (speed / maxSpeed); // at top speed, should be able to cross from left to right (-1 to 1) in 1 second
 		
 		if (Input.GetKey(KeyCode.LeftArrow)) {
@@ -94,25 +105,41 @@ public class RoadController : Reactive {
 		public int[] tris;
 	}
 	
-	class Segment {
+	struct Segment {
+		public int index;
 		public float width;
 		public int lanes;
-		private Polygon _polygon;
-		public Polygon polygon {
-			get { return _polygon; }
-			set { 
-				_polygon = value;
-				_submeshType = (SubmeshType)_polygon.submeshIndex;
-			}
+		public Polygon[] polygons;
+		public SegmentColor color;
+		public Projection p1;
+		public Projection p2;
+	}
+	
+	struct ScreenInfo {
+		public float x;
+		public float y;
+		public float scale;
+		public float w;
+	}
+	
+	struct Projection {
+		public Vector3 world;
+		public Vector3 camera;
+		public ScreenInfo screen;
+		
+		public Projection(Vector3 world) : this(world, new Vector3(), new ScreenInfo()) {
 		}
-		private SubmeshType _submeshType;
-		public SubmeshType submeshType {
-			get { return _submeshType; }
-			set { 
-				_submeshType = value;
-				_polygon.submeshIndex = (int)_submeshType;
-			}
+		
+		public Projection(Vector3 world, Vector3 camera, ScreenInfo screen) {
+			this.world = world;
+			this.camera = camera;
+			this.screen = screen;
 		}
+	}
+	
+	enum SegmentColor {
+		DARK = 0,
+		LIGHT
 	}
 	
 	enum SubmeshType {
@@ -121,6 +148,87 @@ public class RoadController : Reactive {
 		ROAD_GRASS_DARK,
 		ROAD_GRASS_LIGHT,
 		ROAD_STRIPE
+	}
+	
+	Segment findSegment(float z) {
+		if (_segments.Count < 1) {
+			throw new Exception("Can't find segment, segments list empty");
+		}
+		return _segments[Mathf.FloorToInt(z/segmentLength) % _segments.Count];
+	}
+	
+	Projection project(Projection p, float cameraX, float cameraY, float cameraZ, float cameraDepth, float width, float height, float roadWidth) {
+		p.camera.x     = p.world.x - cameraX;
+	    p.camera.y     = p.world.y - cameraY;
+	    p.camera.z     = p.world.z - cameraZ;
+	    p.screen.scale = cameraDepth/p.camera.z;
+	    p.screen.x     = Mathf.Round((width/2)  + (p.screen.scale * p.camera.x  * width/2));
+	    p.screen.y     = Mathf.Round((height/2) - (p.screen.scale * p.camera.y  * height/2));
+	    p.screen.w     = Mathf.Round(             (p.screen.scale * roadWidth   * width/2));
+	    return p;
+	}
+	
+	void resetRoad() {
+		_segments.Clear();
+		for (int n = 0; n < 500; n++) { //arbitrary road length
+			Segment segment = new Segment();
+			segment.index = n;
+			segment.p1 = new Projection(new Vector3(0, 0, n * segmentLength));
+			segment.p2 = new Projection(new Vector3(0, 0, (n+1) * segmentLength));
+			segment.color = ((Mathf.FloorToInt(n/rumbleLength)%2) != 0) ? SegmentColor.DARK : SegmentColor.LIGHT;
+			_segments.Add(segment);
+		}
+		trackLength = _segments.Count * segmentLength;
+	}
+	
+	void Render() {
+		Segment baseSegment = findSegment(position);
+		float maxy = cameraHeight;
+		
+		for (int n = 0; n < drawDistance; n++) {
+		
+			Segment segment = _segments[(baseSegment.index + n) % _segments.Count];
+			
+			segment.p1 = project(segment.p1, (playerXOffset * roadHalfWidth), cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			segment.p2 = project(segment.p2, (playerXOffset * roadHalfWidth), cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			if ((segment.p1.camera.z <= cameraDepth) || // behind us
+        		(segment.p2.screen.y >= maxy)) {          // clip by (already rendered) segment
+		     	continue;
+			}
+			
+			maxy = segment.p2.screen.y;
+		}
+	}
+	
+	void queueSegment(float width, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SubmeshType type) {
+		float r1 = rumbleWidth(w1, lanes);
+		float r2 = rumbleWidth(w2, lanes);
+		float l1 = laneMarkerWidth(w1, lanes);
+		float l2 = laneMarkerWidth(w2, lanes);
+		
+		float lanew1, lanew2, lanex1, lanex2;
+		int lane;
+		
+		Segment segment = new Segment();
+		segment.polygons = new Polygon[4];
+		//Grass
+		segment.polygons[0] = makeQuad(
+			(int)SubmeshType.ROAD_GRASS_LIGHT,
+			0, 0,
+			0, y2,
+			width, y2,
+			width, 0
+		);
+		
+		//Rumble 1
+		/*
+		segment.polygons[1] = makeQuad (
+			(int)SubmeshType.ROAD_ASPHALT_LIGHT,
+			*/
+			
+			
+		//Rumble 2
+		//Road
 	}
 	
 	Polygon makeQuad(int submeshIndex, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
@@ -155,7 +263,7 @@ public class RoadController : Reactive {
 		return projectedRoadWidth/Mathf.Max(32, 8*lanes);
 	}
 	
-	void Render() {
+	void RenderSegments() {
 		int subMeshCount = 2;
 		Polygon[] subPolygons = new Polygon[subMeshCount];
 		
@@ -206,8 +314,6 @@ public class RoadController : Reactive {
 	        mesh.SetTriangles(subPolygons[submeshIndex].tris, submeshIndex);
 		}
         mesh.RecalculateNormals();
-        
-		_segmentRenderQueue.Clear();
 	}
 	
 	#endregion
