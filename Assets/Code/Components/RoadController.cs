@@ -3,17 +3,26 @@ using System.Collections;
 
 public class RoadController : Reactive {
 
-	public Texture2D texture;
 	private Rect _screenRect = new Rect(0, 0, Screen.width, Screen.height);
-	public Material material;
+	private Texture2D _texture;
 
 	// Use this for initialization
 	void Start () {
+		_texture = new Texture2D(320, 112);
+		_texture.filterMode = FilterMode.Point;
+		guiTexture.texture = _texture;
 	}
 	
 	// Update is called once per frame
 	void Update () {
-	
+		if (null != guiTexture) {
+			for (int x = 0; x < _texture.width; x++) {
+				for (int y = 0; y < _texture.height; y++) {
+					_texture.SetPixel(x, y, new Color(Random.value, Random.value, Random.value, 1));
+				}
+			}
+			_texture.Apply();
+		}
 	}
 	
 	void OnRenderObject() {
