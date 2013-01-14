@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Text;
+using System;
 
 //[RequireComponent (typeof(GUITexture))]
 [RequireComponent (typeof(MeshFilter ))]
@@ -82,58 +83,70 @@ public class RoadController : Reactive {
 		Render();
 	}
 	
+	struct Polygon {
+		//Only planning to use this to store quads for now.
+		public int submeshIndex;
+		public Vector3[] verts;
+		public int[] tris;
+	}
+	
+	Polygon makeQuad(int submeshIndex, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
+		Polygon poly = new Polygon();
+		poly.submeshIndex = submeshIndex;
+		
+		//Make vertices
+		poly.verts = new Vector3[4];
+        poly.verts[0] = new Vector3(x1, y1, 0);
+        poly.verts[1] = new Vector3(x2, y2, 0);
+        poly.verts[2] = new Vector3(x3, y3, 0);
+        poly.verts[3] = new Vector3(x4, y4, 0);
+
+		// Generate triangles indices
+		poly.tris = new int[6];
+		poly.tris[0] = submeshIndex * 4;
+		poly.tris[1] = submeshIndex * 4 + 1;
+		poly.tris[2] = submeshIndex * 4 + 2;
+
+		poly.tris[3] = submeshIndex * 4;
+		poly.tris[4] = submeshIndex * 4 + 3;
+		poly.tris[5] = submeshIndex * 4 + 1;
+		
+		return poly;
+	}
+	
 	void Render() {
 		int subMeshCount = 2;
-        Vector3[] verts  = new Vector3[8];
-        //Vector2[] uv  = new Vector2[8];
-        int[][] tri  = new int[subMeshCount][];
-
-        verts[0] = new Vector3(0 /*ul.x*/, 0, 1 /*ul.y*/);
-        verts[1] = new Vector3(1 /*lr.x*/, 0, 0 /*lr.y*/);
-        verts[2] = new Vector3(0 /*ll.x*/, 0, 0 /*ll.y*/);
-        verts[3] = new Vector3(1 /*ur.x*/, 0, 1 /*ur.y*/);
-        
-        verts[4] = new Vector3(0, 0, -1);
-        verts[5] = new Vector3(-1, 0, 0);
-        verts[6] = new Vector3(0, 0, 0);
-        verts[7] = new Vector3(-1, 0, -1);
-        
-        /*
-        verts[4] = new Vector3(0, 0, 1);
-        verts[5] = new Vector3(1, 0, 0);
-        verts[6] = new Vector3(0, 0, 0);
-        verts[7] = new Vector3(1, 0, 1);
-        */
-
-/*
-        uv[0] = new Vector2(0, 0);
-        uv[1] = new Vector2(1, 0);
-        uv[2] = new Vector2(0, 1);
-        uv[3] = new Vector2(1, 1);
-        
-        uv[4] = new Vector2(0, 0);
-        uv[5] = new Vector2(1, 0);
-        uv[6] = new Vector2(0, 1);
-        uv[7] = new Vector2(1, 1);
-        */
-
-	/*
-	var submeshTris = new int[(sections.length - 1) * 2 * 3];
-	for (i=0;i<submeshTris.length / 6;i++)
-	*/
-		// Generate triangles indices
-        for (int i = 0; i < subMeshCount; i++) {
-			int[] submeshTris = new int[6];
-			tri[i] = submeshTris;
-			submeshTris[0] = i * 4;
-			submeshTris[1] = i * 4 + 1;
-			submeshTris[2] = i * 4 + 2;
-	
-			submeshTris[3] = i * 4;
-			submeshTris[4] = i * 4 + 3;
-			submeshTris[5] = i * 4 + 1;
+		Polygon[] subPolygons = new Polygon[subMeshCount];
+		
+		//Create quads
+		{
+			int polyIndex = 0;
+			subPolygons[polyIndex] = makeQuad(
+				polyIndex,
+				0, 200, //upper left
+				200, 0, //lower right
+				0, 0, //lower left
+				200, 200 //upper right
+			);
+			polyIndex++;
+			subPolygons[polyIndex] = makeQuad(
+				polyIndex,
+				0, -100, //upper left
+				-100, 0, //lower right
+				0, 0, //lower left
+				-100, -100 //upper right
+			);
 		}
-
+		
+		//Copy quads into mesh vertex data
+		const int vertsPerPoly = 4;
+        Vector3[] verts  = new Vector3[subMeshCount * vertsPerPoly];
+		for (int subMeshIndex = 0, vertsIndex = 0; subMeshIndex < subMeshCount; subMeshIndex++, vertsIndex += vertsPerPoly) {
+			Polygon poly = subPolygons[subMeshIndex];
+			Array.Copy(poly.verts, 0, verts, vertsIndex, vertsPerPoly); 
+		}
+		
+		//Initialize mesh
         Mesh mesh;
         if (null == gameObject.GetComponent<MeshFilter>().mesh) {
 			mesh = new Mesh();
@@ -145,64 +158,13 @@ public class RoadController : Reactive {
 		}
         mesh.MarkDynamic();
         mesh.vertices = verts;
-        //mesh.triangles = tri;
         
 		//Each submesh is assigned to a different material in the Mesh Renderer.
         mesh.subMeshCount = subMeshCount;
         for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
-	        mesh.SetTriangles(tri[submeshIndex], submeshIndex);
+	        mesh.SetTriangles(subPolygons[submeshIndex].tris, submeshIndex);
 		}
-        //mesh.uv = uv;
         mesh.RecalculateNormals();
-
-/*
-        Color[] color = new Color[4];
-        color[2] = new Color(1, 0, 0);
-        color[1] = new Color(0, 1, 0);
-        color[0] = new Color(0, 0, 1);
-        color[3] = new Color(0, 1, 0);
-
-        mesh.colors = color;
-        */
-        //Graphics.DrawMeshNow(mesh, transform.worldToLocalMatrix);
-        //Graphics.DrawMesh(mesh, transform.worldToLocalMatrix, material, 9);
-		
-	/*
-		if (null != guiTexture) {
-			for (int x = 0; x < _texture.width; x++) {
-				for (int y = 0; y < _texture.height; y++) {
-					_texture.SetPixel(x, y, new Color(Random.value, Random.value, Random.value, 1));
-				}
-			}
-			_texture.Apply();
-		}
-		*/
-	}
-	
-	void OnGUI() {
-	/*
-		if (EventType.Repaint == Event.current.type) {
-			if (null != guiTexture.texture && null != material) {
-				GL.PushMatrix();
-				material.SetPass(0);
-				GL.LoadOrtho();
-				//GL.LoadPixelMatrix(0, Camera.main.pixelWidth, Camera.main.pixelHeight / 2f, 0);
-	//			GL.LoadPixelMatrix (0, 512, 512, 0); 
-				//Graphics.DrawTexture(_screenRect, guiTexture.texture, material);
-				Mesh mesh = new Mesh();
-				
-				/*
-				GL.Begin(GL.TRIANGLES);
-				GL.Color(new Color(1,1,1,1));
-				GL.Vertex3(0.5f, 0.25f, 0f);
-				GL.Vertex3(0.25f, 0.25f, 0f);
-				GL.Vertex3(0.375f, 0.5f, 0f);
-				GL.End();
-				*//*
-				GL.PopMatrix();
-		}
-		}
-		*/
 	}
 	
 	#region Reactive event handlers
