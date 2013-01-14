@@ -84,30 +84,52 @@ public class RoadController : Reactive {
 	
 	void Render() {
 		int subMeshCount = 1;
-        Vector3[] verts  = new Vector3[4];
-        Vector2[] uv  = new Vector2[4];
+        Vector3[] verts  = new Vector3[8];
+        Vector2[] uv  = new Vector2[8];
         int[][] tri  = new int[subMeshCount][];
 
         verts[0] = new Vector3(0, 0, 1);
         verts[1] = new Vector3(1, 0, 0);
         verts[2] = new Vector3(0, 0, 0);
         verts[3] = new Vector3(1, 0, 1);
+        
+        verts[4] = new Vector3(0, 0, -1);
+        verts[5] = new Vector3(-1, 0, 0);
+        verts[6] = new Vector3(0, 0, 0);
+        verts[7] = new Vector3(-1, 0, -1);
+        
+        /*
+        verts[4] = new Vector3(0, 0, 1);
+        verts[5] = new Vector3(1, 0, 0);
+        verts[6] = new Vector3(0, 0, 0);
+        verts[7] = new Vector3(1, 0, 1);
+        */
 
         uv[0] = new Vector2(0, 0);
         uv[1] = new Vector2(1, 0);
         uv[2] = new Vector2(0, 1);
         uv[3] = new Vector2(1, 1);
+        
+        uv[4] = new Vector2(0, 0);
+        uv[5] = new Vector2(1, 0);
+        uv[6] = new Vector2(0, 1);
+        uv[7] = new Vector2(1, 1);
 
-        for (int submeshIndex = 0; submeshIndex < subMeshCount; submeshIndex++) {
+	/*
+	var submeshTris = new int[(sections.length - 1) * 2 * 3];
+	for (i=0;i<submeshTris.length / 6;i++)
+	*/
+		// Generate triangles indices
+        for (int i = 0; i < subMeshCount; i++) {
 			int[] submeshTris = new int[6];
-			tri[submeshIndex] = submeshTris;
-	        submeshTris[0] = 0;
-	        submeshTris[1] = 2;
-	        submeshTris[2] = 3;
-
-	        submeshTris[3] = 0;
-	        submeshTris[4] = 3;
-	        submeshTris[5] = 1;
+			tri[i] = submeshTris;
+			submeshTris[0] = i * 4;
+			submeshTris[1] = i * 4 + 1;
+			submeshTris[2] = i * 4 + 2;
+	
+			submeshTris[3] = i * 4;
+			submeshTris[4] = i * 4 + 3;
+			submeshTris[5] = i * 4 + 1;
 		}
 
         Mesh mesh;
@@ -131,6 +153,7 @@ public class RoadController : Reactive {
         mesh.uv = uv;
         mesh.RecalculateNormals();
 
+/*
         Color[] color = new Color[4];
         color[2] = new Color(1, 0, 0);
         color[1] = new Color(0, 1, 0);
@@ -138,6 +161,7 @@ public class RoadController : Reactive {
         color[3] = new Color(0, 1, 0);
 
         mesh.colors = color;
+        */
         //Graphics.DrawMeshNow(mesh, transform.worldToLocalMatrix);
         //Graphics.DrawMesh(mesh, transform.worldToLocalMatrix, material, 9);
 		
