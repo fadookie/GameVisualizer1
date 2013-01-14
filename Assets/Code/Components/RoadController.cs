@@ -83,15 +83,15 @@ public class RoadController : Reactive {
 	}
 	
 	void Render() {
-		int subMeshCount = 1;
+		int subMeshCount = 2;
         Vector3[] verts  = new Vector3[8];
-        Vector2[] uv  = new Vector2[8];
+        //Vector2[] uv  = new Vector2[8];
         int[][] tri  = new int[subMeshCount][];
 
-        verts[0] = new Vector3(0, 0, 1);
-        verts[1] = new Vector3(1, 0, 0);
-        verts[2] = new Vector3(0, 0, 0);
-        verts[3] = new Vector3(1, 0, 1);
+        verts[0] = new Vector3(0 /*ul.x*/, 0, 1 /*ul.y*/);
+        verts[1] = new Vector3(1 /*lr.x*/, 0, 0 /*lr.y*/);
+        verts[2] = new Vector3(0 /*ll.x*/, 0, 0 /*ll.y*/);
+        verts[3] = new Vector3(1 /*ur.x*/, 0, 1 /*ur.y*/);
         
         verts[4] = new Vector3(0, 0, -1);
         verts[5] = new Vector3(-1, 0, 0);
@@ -105,6 +105,7 @@ public class RoadController : Reactive {
         verts[7] = new Vector3(1, 0, 1);
         */
 
+/*
         uv[0] = new Vector2(0, 0);
         uv[1] = new Vector2(1, 0);
         uv[2] = new Vector2(0, 1);
@@ -114,6 +115,7 @@ public class RoadController : Reactive {
         uv[5] = new Vector2(1, 0);
         uv[6] = new Vector2(0, 1);
         uv[7] = new Vector2(1, 1);
+        */
 
 	/*
 	var submeshTris = new int[(sections.length - 1) * 2 * 3];
@@ -150,7 +152,7 @@ public class RoadController : Reactive {
         for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
 	        mesh.SetTriangles(tri[submeshIndex], submeshIndex);
 		}
-        mesh.uv = uv;
+        //mesh.uv = uv;
         mesh.RecalculateNormals();
 
 /*
