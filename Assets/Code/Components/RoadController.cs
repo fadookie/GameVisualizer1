@@ -1,12 +1,16 @@
 using UnityEngine;
 using System.Collections;
+using System.Text;
 
-[RequireComponent (typeof(GUITexture))]
+//[RequireComponent (typeof(GUITexture))]
+[RequireComponent (typeof(MeshFilter ))]
+[RequireComponent (typeof(MeshRenderer))]
 public class RoadController : Reactive {
 
 	
 	private Rect _screenRect = new Rect(0, 0, Screen.width, Screen.height);
 	private Texture2D _texture;
+	//public Material material;
 	//var segments      = [];                      // array of road segments
 	public float roadHalfWidth = 2000; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
 	public float segmentLength = 200; // length of a single segment
@@ -38,7 +42,15 @@ public class RoadController : Reactive {
 		
 		_texture = new Texture2D(320, 112);
 		_texture.filterMode = FilterMode.Point;
-		guiTexture.texture = _texture;
+		//guiTexture.texture = _texture;
+		
+		/*
+		StringBuilder builder = new StringBuilder();
+		foreach(Vector3 v3 in gameObject.GetComponent<MeshFilter>().mesh.vertices) {
+			builder.Append(v3.ToString() + ", ");
+		}
+		Debug.Log(builder);
+		*/
 	}
 	
 	// Update is called once per frame
@@ -71,6 +83,65 @@ public class RoadController : Reactive {
 	}
 	
 	void Render() {
+		int subMeshCount = 1;
+        Vector3[] verts  = new Vector3[4];
+        Vector2[] uv  = new Vector2[4];
+        int[][] tri  = new int[subMeshCount][];
+
+        verts[0] = new Vector3(0, 0, 1);
+        verts[1] = new Vector3(1, 0, 0);
+        verts[2] = new Vector3(0, 0, 0);
+        verts[3] = new Vector3(1, 0, 1);
+
+        uv[0] = new Vector2(0, 0);
+        uv[1] = new Vector2(1, 0);
+        uv[2] = new Vector2(0, 1);
+        uv[3] = new Vector2(1, 1);
+
+        for (int submeshIndex = 0; submeshIndex < subMeshCount; submeshIndex++) {
+			int[] submeshTris = new int[6];
+			tri[submeshIndex] = submeshTris;
+	        submeshTris[0] = 0;
+	        submeshTris[1] = 2;
+	        submeshTris[2] = 3;
+
+	        submeshTris[3] = 0;
+	        submeshTris[4] = 3;
+	        submeshTris[5] = 1;
+		}
+
+        Mesh mesh;
+        if (null == gameObject.GetComponent<MeshFilter>().mesh) {
+			mesh = new Mesh();
+			gameObject.GetComponent<MeshFilter>().mesh = mesh;
+		} else {
+			//Re-use existing mesh as reccomended in Unity docs
+			mesh = gameObject.GetComponent<MeshFilter>().mesh;
+			mesh.Clear();
+		}
+        mesh.MarkDynamic();
+        mesh.vertices = verts;
+        //mesh.triangles = tri;
+        
+		//Each submesh is assigned to a different material in the Mesh Renderer.
+        mesh.subMeshCount = subMeshCount;
+        for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
+	        mesh.SetTriangles(tri[submeshIndex], submeshIndex);
+		}
+        mesh.uv = uv;
+        mesh.RecalculateNormals();
+
+        Color[] color = new Color[4];
+        color[2] = new Color(1, 0, 0);
+        color[1] = new Color(0, 1, 0);
+        color[0] = new Color(0, 0, 1);
+        color[3] = new Color(0, 1, 0);
+
+        mesh.colors = color;
+        //Graphics.DrawMeshNow(mesh, transform.worldToLocalMatrix);
+        //Graphics.DrawMesh(mesh, transform.worldToLocalMatrix, material, 9);
+		
+	/*
 		if (null != guiTexture) {
 			for (int x = 0; x < _texture.width; x++) {
 				for (int y = 0; y < _texture.height; y++) {
@@ -79,17 +150,31 @@ public class RoadController : Reactive {
 			}
 			_texture.Apply();
 		}
+		*/
 	}
 	
-	void OnRenderObject() {
+	void OnGUI() {
 	/*
-		if (null != texture && null != material) {
-			GL.PushMatrix();
-			Debug.Log(texture);
-			GL.LoadPixelMatrix(0, Camera.main.pixelWidth, Camera.main.pixelHeight, 0);
-//			GL.LoadPixelMatrix (0, 512, 512, 0); 
-			Graphics.DrawTexture(_screenRect, texture, material);
-			GL.PopMatrix();
+		if (EventType.Repaint == Event.current.type) {
+			if (null != guiTexture.texture && null != material) {
+				GL.PushMatrix();
+				material.SetPass(0);
+				GL.LoadOrtho();
+				//GL.LoadPixelMatrix(0, Camera.main.pixelWidth, Camera.main.pixelHeight / 2f, 0);
+	//			GL.LoadPixelMatrix (0, 512, 512, 0); 
+				//Graphics.DrawTexture(_screenRect, guiTexture.texture, material);
+				Mesh mesh = new Mesh();
+				
+				/*
+				GL.Begin(GL.TRIANGLES);
+				GL.Color(new Color(1,1,1,1));
+				GL.Vertex3(0.5f, 0.25f, 0f);
+				GL.Vertex3(0.25f, 0.25f, 0f);
+				GL.Vertex3(0.375f, 0.5f, 0f);
+				GL.End();
+				*//*
+				GL.PopMatrix();
+		}
 		}
 		*/
 	}
