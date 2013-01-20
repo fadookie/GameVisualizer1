@@ -26,6 +26,7 @@ public class MicrophoneFFT : MonoBehaviour
 	public float amplitudeThreshhold = 70.0f;
 	public uint amplitudeEventChannel = 2u;
 	public bool recording = true;
+	public bool mockAmplitude = false;
   
 	//Use this for initialization  
 	void Start ()
@@ -55,6 +56,12 @@ public class MicrophoneFFT : MonoBehaviour
     
 	void Update ()
 	{
+		if (mockAmplitude) {
+			float amplitude = Mathf.Sin(Time.realtimeSinceStartup * 4);
+			ReactiveManager.Instance.amplitudeEvent(amplitudeEventChannel, amplitude, amplitude > amplitudeThreshhold);
+			return;
+		}
+		
 		TwiddleMic();
 		if (micConnected && (null != goAudioSource) && (null != goAudioSource.clip)) {
 			

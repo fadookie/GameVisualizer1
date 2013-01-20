@@ -53,7 +53,7 @@ public class PlayerVehicleController : Reactive {
 			}
 		}
 		
-		//_sprite.speed = 1;//_speed / 1000;
+		//_sprite.speed = 1;//(_speed / 1000) * Time.deltaTime;
 		if (orientationChanged || (!_startedPlaying && _speed > 0)) {
 			_startedPlaying = true;
 			_sprite.PlayLoop(_sprite.animationFrameset);

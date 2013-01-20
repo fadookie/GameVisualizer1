@@ -36,9 +36,12 @@ public class RoadController : Reactive {
 	public float decel; // 'natural' deceleration rate when neither accelerating, nor braking
 	public float offRoadDecel; // off road deceleration is somewhere in between
 	public float offRoadLimit; // limit when off road deceleration no longer applies (e.g. you can always go at least this speed even when off road)
-	public float darkRandomDimValue = 0.3f;
-	public Color laneSeparatorNormalColor = new Color(0, 0, 0);
-	public Color laneSeparatorHighlightColor = new Color(0.5f, 0.5f, 1);
+	//public float darkRandomDimValue = 0.3f;
+	public bool alwaysRecolorMaterials = true;
+	private Color[] _originalMaterialColors = new Color[NUM_SUBMESH_TYPES];
+	public float amplitudeColorMapStart = 0;
+	public float amplitudeColorMapStop = 1;
+	public float hueOffsetTest = 0.3f;
 	private PlayerVehicleController _playerVehicleController;
 
 	// Use this for initialization
@@ -62,11 +65,12 @@ public class RoadController : Reactive {
 		height = 1000;
 		*/
 		
-		for (int i = 0; i < _polyRenderQueue.Length; i++) {
+		//Init _polyRenderQueue and _originalMaterialColors
+		Material[] mats = gameObject.GetComponent<MeshRenderer>().materials;
+		for (int i = 0; i < NUM_SUBMESH_TYPES; i++) {
 			_polyRenderQueue[i] = new List<Polygon>();
+			_originalMaterialColors[i] = new Color(mats[i].color.r, mats[i].color.g, mats[i].color.b);
 		}
-		
-		gameObject.GetComponent<MeshRenderer>().materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorNormalColor;
 		
 		resetRoad();
 		//guiTexture.texture = _texture;
@@ -509,33 +513,44 @@ public class RoadController : Reactive {
 	#region Reactive event handlers
 	
 	public override void reactToAmplitude(uint channel, float amp, bool overThreshold) {
-		if (overThreshold) {
-			MeshRenderer renderer = gameObject.GetComponent<MeshRenderer>();
-			Material[] materials = renderer.materials;
-			System.Array submeshTypes = System.Enum.GetValues(typeof(SubmeshType));
-			Color randColorLight =  new Color(Random.value, Random.value, Random.value);
-			Color randColorDark = new Color(Mathf.Clamp01(randColorLight.r - darkRandomDimValue), Mathf.Clamp01(randColorLight.g - darkRandomDimValue), Mathf.Clamp01(randColorLight.b - darkRandomDimValue));
-			foreach(SubmeshType matType in submeshTypes) {
+		System.Array submeshTypes = System.Enum.GetValues(typeof(SubmeshType));
+		MeshRenderer renderer = gameObject.GetComponent<MeshRenderer>();
+		//float amplitudeThreshhold = GameObject.FindGameObjectWithTag("MicController").GetComponent<MicrophoneFFT>().amplitudeThreshhold;
+		Material[] materials = renderer.materials;
+		foreach(SubmeshType matType in submeshTypes) {
+			Material mat =  materials[(int)matType];
+			Color matColor;
+			if (overThreshold || alwaysRecolorMaterials) {
+				float hueOffset = MathHelper.Map(amp, amplitudeColorMapStart, amplitudeColorMapStop, 0, 1);//Random.value; //hueOffsetTest;
+				//Color randColorLight =  new Color(Random.value, Random.value, Random.value);
+				//Color randColorDark = new Color(Mathf.Clamp01(randColorLight.r - darkRandomDimValue), Mathf.Clamp01(randColorLight.g - darkRandomDimValue), Mathf.Clamp01(randColorLight.b - darkRandomDimValue));
+				HSBColor hsbColor = new HSBColor(_originalMaterialColors[(int)matType]);
+				hsbColor.h = (hsbColor.h + hueOffset) % 1f;
 				switch(matType) {
-					case SubmeshType.ROAD_RUMBLE_DARK:
-						materials[(int)matType].color = randColorDark;
-						break;
-					case SubmeshType.ROAD_RUMBLE_LIGHT:
+					case SubmeshType.ROAD_ASPHALT_DARK:
+					case SubmeshType.ROAD_ASPHALT_LIGHT:
 					case SubmeshType.ROAD_LANE_SEPARATOR:
-						materials[(int)matType].color = randColorLight;
+						hsbColor.s = Mathf.Clamp01(hsbColor.s + 0.5f);
+						hsbColor.b = Mathf.Clamp01(hsbColor.b + 0.5f);
 						break;
 					default:
 						break;
 				}
+				matColor = hsbColor.ToColor();
+			} else {
+				matColor = _originalMaterialColors[(int)matType];
+			}
+			switch(matType) {
+				case SubmeshType.ROAD_RUMBLE_DARK:
+				case SubmeshType.ROAD_RUMBLE_LIGHT:
+				case SubmeshType.ROAD_LANE_SEPARATOR:
+					mat.color = matColor;
+					break;
+				default:
+					mat.color = matColor;
+					break;
 			}
 		}
-	/*
-		if (overThreshold) {
-			renderer.materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorHighlightColor;
-		} else {
-			renderer.materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorNormalColor;
-		}
-		*/
 	}
 	public override void reactToBeat(float currentBPM) {
 	}
