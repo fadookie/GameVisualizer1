@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using System;
 
 [RequireComponent (typeof(MeshFilter))]
 [RequireComponent (typeof(MeshRenderer))]
@@ -14,11 +13,12 @@ public class RoadController : Reactive {
 	public float width;
 	public float height;
 	private List<Segment> _segments = new List<Segment>();
-	public static readonly int NUM_SUBMESH_TYPES = Enum.GetNames(typeof(SubmeshType)).Length;
+	public static readonly int NUM_SUBMESH_TYPES = System.Enum.GetNames(typeof(SubmeshType)).Length;
 	private List<Polygon>[] _polyRenderQueue = new List<Polygon>[NUM_SUBMESH_TYPES]; 
 	public float roadHalfWidth = 200; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
 	public float segmentLength = 200; // length of a single segment
 	public float rumbleLength = 3;  // number of segments per red/white rumble strip
+	public float numSegments = 3500; //FIXME make this a circular buffer
 	public float trackLength; // z length of entire track (computed)
 	public int lanes = 3; // number of lanes
 	public float fieldOfView = 100; // angle (degrees) for field of view
@@ -36,6 +36,7 @@ public class RoadController : Reactive {
 	public float decel; // 'natural' deceleration rate when neither accelerating, nor braking
 	public float offRoadDecel; // off road deceleration is somewhere in between
 	public float offRoadLimit; // limit when off road deceleration no longer applies (e.g. you can always go at least this speed even when off road)
+	public float darkRandomDimValue = 0.3f;
 	public Color laneSeparatorNormalColor = new Color(0, 0, 0);
 	public Color laneSeparatorHighlightColor = new Color(0.5f, 0.5f, 1);
 	private PlayerVehicleController _playerVehicleController;
@@ -228,7 +229,7 @@ public class RoadController : Reactive {
 	
 	Segment findSegment(float z) {
 		if (_segments.Count < 1) {
-			throw new Exception("Can't find segment, segments list empty");
+			throw new System.Exception("Can't find segment, segments list empty");
 		}
 		return _segments[Mathf.FloorToInt(z/segmentLength) % _segments.Count];
 	}
@@ -248,7 +249,7 @@ public class RoadController : Reactive {
 	
 	void resetRoad() {
 		_segments.Clear();
-		for (int n = 0; n < 500; n++) { //arbitrary road length
+		for (int n = 0; n < numSegments; n++) { //arbitrary road length
 			Segment segment = new Segment();
 			segment.index = n;
 			segment.p1 = new Projection(new Vector3(0, 0, n * segmentLength));
@@ -509,10 +510,32 @@ public class RoadController : Reactive {
 	
 	public override void reactToAmplitude(uint channel, float amp, bool overThreshold) {
 		if (overThreshold) {
-			gameObject.GetComponent<MeshRenderer>().materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorHighlightColor;
-		} else {
-			gameObject.GetComponent<MeshRenderer>().materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorNormalColor;
+			MeshRenderer renderer = gameObject.GetComponent<MeshRenderer>();
+			Material[] materials = renderer.materials;
+			System.Array submeshTypes = System.Enum.GetValues(typeof(SubmeshType));
+			Color randColorLight =  new Color(Random.value, Random.value, Random.value);
+			Color randColorDark = new Color(Mathf.Clamp01(randColorLight.r - darkRandomDimValue), Mathf.Clamp01(randColorLight.g - darkRandomDimValue), Mathf.Clamp01(randColorLight.b - darkRandomDimValue));
+			foreach(SubmeshType matType in submeshTypes) {
+				switch(matType) {
+					case SubmeshType.ROAD_RUMBLE_DARK:
+						materials[(int)matType].color = randColorDark;
+						break;
+					case SubmeshType.ROAD_RUMBLE_LIGHT:
+					case SubmeshType.ROAD_LANE_SEPARATOR:
+						materials[(int)matType].color = randColorLight;
+						break;
+					default:
+						break;
+				}
+			}
 		}
+	/*
+		if (overThreshold) {
+			renderer.materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorHighlightColor;
+		} else {
+			renderer.materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorNormalColor;
+		}
+		*/
 	}
 	public override void reactToBeat(float currentBPM) {
 	}
