@@ -226,7 +226,7 @@ public class RoadController : Reactive {
 		int lane;
 		
 		Segment segment = new Segment();
-		segment.polygons = new Polygon[4];
+		segment.polygons = new Polygon[2]; //[4]
 		//Grass
 		/*
 		segment.polygons[0] = makeQuad(
@@ -295,75 +295,21 @@ public class RoadController : Reactive {
 		return projectedRoadWidth/Mathf.Max(32, 8*lanes);
 	}
 	
-	void RenderSegments(){
-	
-			int subMeshCount = 2;
-		Polygon[] subPolygons = new Polygon[subMeshCount];
-		
-		//Create quads
-		{
-			int polyIndex = 0;
-			subPolygons[polyIndex] = makeQuad(
-				polyIndex,
-				200, 200, //upper right
-				200, 0, //lower right
-				0, 0, //lower left
-				0, 200 //upper left
-			);
-			polyIndex++;
-			subPolygons[polyIndex] = makeQuad(
-				polyIndex,
-				-100, -100, //upper right
-				-100, 0, //lower right
-				0, 0, //lower left
-				0, -100 //upper left
-			);
-		}
-		
-		//Copy quads into mesh vertex data
-		const int vertsPerPoly = 4;
-        Vector3[] verts  = new Vector3[subMeshCount * vertsPerPoly];
-		for (int subMeshIndex = 0, vertsIndex = 0; subMeshIndex < subMeshCount; subMeshIndex++, vertsIndex += vertsPerPoly) {
-			Polygon poly = subPolygons[subMeshIndex];
-			Array.Copy(poly.verts, 0, verts, vertsIndex, vertsPerPoly); 
-		}
-		
+	void RenderSegments() {
 		//Initialize mesh
         Mesh mesh;
-        if (null == gameObject.GetComponent<MeshFilter>().mesh) {
-			mesh = new Mesh();
-			gameObject.GetComponent<MeshFilter>().mesh = mesh;
-		} else {
-			//Re-use existing mesh as reccomended in Unity docs
-			mesh = gameObject.GetComponent<MeshFilter>().mesh;
-			mesh.Clear();
-		}
-        mesh.MarkDynamic();
-        mesh.vertices = verts;
-        
-		//Each submesh is assigned to a different material in the Mesh Renderer.
-        mesh.subMeshCount = subMeshCount;
-        for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
-	        mesh.SetIndices(subPolygons[submeshIndex].indicies, Polygon.topology, submeshIndex);
-	        //mesh.SetTriangles(subPolygons[submeshIndex].indicies, submeshIndex);
-		}
-        mesh.RecalculateNormals();
-	}
-	
-	void RenderSegmentsNew() {
-		//Initialize mesh
-        Mesh mesh;
-        if (null == gameObject.GetComponent<MeshFilter>().mesh) {
-			mesh = new Mesh();
-			gameObject.GetComponent<MeshFilter>().mesh = mesh;
-		} else {
-			//Re-use existing mesh as reccomended in Unity docs
-			mesh = gameObject.GetComponent<MeshFilter>().mesh;
-			mesh.Clear();
-		}
-        mesh.MarkDynamic();
-        
 		int subMeshCount = 2;
+        if (null == gameObject.GetComponent<MeshFilter>().mesh) {
+			mesh = new Mesh();
+			gameObject.GetComponent<MeshFilter>().mesh = mesh;
+		} else {
+			//Re-use existing mesh as reccomended in Unity docs
+			mesh = gameObject.GetComponent<MeshFilter>().mesh;
+			mesh.Clear();
+		}
+        mesh.subMeshCount = subMeshCount;
+        mesh.MarkDynamic();
+        
 		//List<Polygon> subPolygons = new List<Polygon>(subMeshCount);
 		/*
 		List<int>[] tris = new List<int>[subMeshCount];
@@ -411,18 +357,13 @@ public class RoadController : Reactive {
 				Array.Copy(poly.verts, 0, verts, vertsIndex, vertsPerPoly); 
 			}
 			*/
-			for (int subMeshIndex = 0; subMeshIndex < subMeshCount; subMeshIndex++) {
-				verts.AddRange(segment.polygons[subMeshIndex].verts);
-			}
-			
-			Mesh newMesh = new Mesh();
-	        newMesh.vertices = verts.ToArray();
+			mesh.vertices = verts.ToArray();
 	        
 			//Each submesh is assigned to a different material in the Mesh Renderer.
-	        newMesh.subMeshCount = subMeshCount;
 	        for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
-		        newMesh.SetTriangles(segment.polygons[submeshIndex].indicies, submeshIndex);
+		        mesh.SetIndices(segment.polygons[submeshIndex].indicies, Polygon.topology, submeshIndex);
 			}
+			/*
 	        for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
 	        	CombineInstance[] ci = new CombineInstance[2];
 	        	ci[0] = new CombineInstance();
@@ -435,6 +376,7 @@ public class RoadController : Reactive {
 	        	ci[1].transform = new Matrix4x4();
 				mesh.CombineMeshes(ci, false, false);
 			}
+			*/
 		}
         
         mesh.RecalculateNormals();
