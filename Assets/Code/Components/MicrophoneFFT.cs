@@ -64,11 +64,12 @@ public class MicrophoneFFT : MonoBehaviour
 		
 		TwiddleMic();
 		if (micConnected && (null != goAudioSource) && (null != goAudioSource.clip)) {
+			const int GRAPH_VERTEX_COUNT = 200;
 			
 			int arraySize = goAudioSource.clip.samples * goAudioSource.clip.channels;
 			if (null == audioData) {
 				audioData = new float[arraySize];
-				graph.SetVertexCount (200);
+				graph.SetVertexCount (GRAPH_VERTEX_COUNT);
 			}
 			
 			goAudioSource.clip.GetData (audioData, 0); //Copy current audio buffer into audioData
@@ -114,7 +115,7 @@ public class MicrophoneFFT : MonoBehaviour
 				int fftInDataIndex = 0;
 				
 				//Graphing stuff
-				int graphSamplingRate = arraySize / 200;
+				int graphSamplingRate = arraySize / GRAPH_VERTEX_COUNT;
 
 				
 				//Debug.Log (string.Format ("for (i = {0}; i!= {1}; i += {2} % foo)", previousAudioBufferPosition, audioBufferPosition, incrementAmount));
@@ -137,7 +138,8 @@ public class MicrophoneFFT : MonoBehaviour
 					}
 					
 					//Update graph if needed
-					if (graphCounter >= graphSamplingRate && graphIndex < 200) {
+					/*
+					if (graphCounter >= graphSamplingRate && graphIndex < GRAPH_VERTEX_COUNT) {
 						float graphAmplitude = MathHelper.Map (audioData [i], -1.0f, 1.0f, 0.0f, 100.0f);
 						graph.SetPosition (
 							graphIndex,
@@ -150,9 +152,10 @@ public class MicrophoneFFT : MonoBehaviour
 						graphIndex++;
 						graphCounter = 0;
 						//builder.Append (graphAmplitude).Append (", ");
-					} else if (graphIndex >= 200) {
+					} else if (graphIndex >= GRAPH_VERTEX_COUNT) {
 						graphIndex = 0;
 					}
+					*/
 				
 					//Count non-zero rows for debugging so I can watch the buffer fill up
 					if (audioData [i] != 0.0f) {
@@ -164,6 +167,19 @@ public class MicrophoneFFT : MonoBehaviour
 				//Fourier.FFT_Quick (fftInData, fftInDataIndex + 1, FourierDirection.Forward);
 				Fourier.FFT (fftInData, FourierDirection.Forward);
 				
+				//Graph FFT
+				for (int fftGraphIndex = 0; fftGraphIndex < GRAPH_VERTEX_COUNT; fftGraphIndex++) {
+					float graphAmplitude = fftInData[fftGraphIndex].Re;//MathHelper.Map (fftInData[i].Re, -1.0f, 1.0f, 0.0f, 100.0f);
+					graph.SetPosition (
+						fftGraphIndex,
+						new Vector3 (
+							fftGraphIndex,
+							graphAmplitude,
+							0
+						)
+					);
+					//builder.Append (graphAmplitude).Append (", ");
+				}
 				//Debug.Log ("i == " + i + " delta from current: " + (audioBufferPosition - i));
 				
 				previousAudioBufferPosition = i;
