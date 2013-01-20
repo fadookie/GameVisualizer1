@@ -48,17 +48,16 @@ public class RoadController : Reactive {
 		
 		_texture = new Texture2D(320, 112);
 		_texture.filterMode = FilterMode.Point;
+		Debug.Log(string.Format("W:{0} H:{1}", Screen.width, Screen.height));
 		
 		/*
 		width = Camera.current.pixelWidth;
 		height = Camera.current.pixelHeight;
 		*/
 		/*
-		width = Screen.width;
-		height = Screen.height;
-		*/
 		width = 1000;
 		height = 1000;
+		*/
 		
 		for (int i = 0; i < _polyRenderQueue.Length; i++) {
 			_polyRenderQueue[i] = new List<Polygon>();
@@ -78,6 +77,10 @@ public class RoadController : Reactive {
 	
 	// Update is called once per frame
 	void Update () {
+		float screenScaleFactor =  1024.0f / Screen.width; //Fix aspect ratio to 4:3 independent of resolution. Not quite sure why this works, but it does.
+		width = Screen.width * screenScaleFactor;
+		height = Screen.height * screenScaleFactor;
+		
 		position += speed * Time.deltaTime;	
 		float dx = Time.deltaTime * 2 * (speed / maxSpeed); // at top speed, should be able to cross from left to right (-1 to 1) in 1 second
 		
