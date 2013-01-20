@@ -272,7 +272,7 @@ public class RoadController : Reactive {
 	/// Processes a segment into polygons which are added to the rendering queue.
 	/// FIXME: this is being drawn upside-down, i'm compensating by rotating the road object in the editor but this inverts the x coordinates.
 	/// </summary>
-	void queueSegment(float width, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SegmentColor color) {
+	void queueSegment(float segmentWidth, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SegmentColor color) {
 		//Decoupled in case we want to move this to a different class, etc.
 		float r1 = rumbleWidth(w1, lanes);
 		float r2 = rumbleWidth(w2, lanes);
@@ -288,10 +288,10 @@ public class RoadController : Reactive {
 		//Grass
 		_polyRenderQueue[(int)grass].Add(
 			makeQuad(
-				0, 0,
+				0, y1,
+				segmentWidth, y1,
+				segmentWidth, y2,
 				0, y2,
-				width, y2,
-				width, 0,
 				-1 //Z-order
 			)
 		);
@@ -308,8 +308,7 @@ public class RoadController : Reactive {
 		);
 		
 		//Right Rumble
-		/* FIXME these aren't displaying for some reason
-		_polyRenderQueue[(int)rumble].Add(
+		_polyRenderQueue[(int)lane].Add(
 			makeQuad(
 				x1+w1+r1, y1,
 				x1+w1, y1,
@@ -318,7 +317,6 @@ public class RoadController : Reactive {
 				1 //Z-order
 			)
 		);
-		*/
 		
 		//Road
 		_polyRenderQueue[(int)road].Add(
@@ -471,6 +469,7 @@ public class RoadController : Reactive {
 		
         //Finalize mesh
         mesh.RecalculateNormals();
+        //mesh.Optimize();
         
 		//Cleanup
         foreach (List<Polygon> polygons in _polyRenderQueue) {
