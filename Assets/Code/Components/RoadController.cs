@@ -308,12 +308,12 @@ public class RoadController : Reactive {
 		);
 		
 		//Right Rumble
-		_polyRenderQueue[(int)lane].Add(
+		_polyRenderQueue[(int)rumble].Add(
 			makeQuad(
-				x1+w1+r1, y1,
 				x1+w1, y1,
-				x2+w2, y2,
+				x1+w1+r1, y1,
 				x2+w2+r2, y2,
+				x2+w2, y2,
 				1 //Z-order
 			)
 		);
