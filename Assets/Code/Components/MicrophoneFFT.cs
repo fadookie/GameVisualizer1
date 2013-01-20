@@ -21,7 +21,7 @@ public class MicrophoneFFT : MonoBehaviour
 	private ComplexF[] fftInData = null;
 	private LineRenderer graph = null; //Spectograph for debugging
 	private int graphCounter = 0; //Simple timer for when to sample for the graph
-	//private int graphIndex = 0; //Loop counter for when to sample
+	private int graphIndex = 0; //Loop counter for when to sample
 	
 	public float amplitudeThreshhold = 70.0f;
 	public uint amplitudeEventChannel = 2u;
@@ -92,6 +92,7 @@ public class MicrophoneFFT : MonoBehaviour
 				
 				//Graph it
 				float graphAmplitude = MathHelper.Map(amplitude, -0.5f, 0.5f, 0.0f, 200.0f);	
+				/*
 				if (graphAmplitude > amplitudeThreshhold) {
 					graph.SetColors(Color.red, Color.red);
 				} else {
@@ -101,6 +102,7 @@ public class MicrophoneFFT : MonoBehaviour
 				if (audioData[audioBufferPosition] != 0.0f) {
 					//Debug.Log(string.Format("Graph = data[{0}] {1} -> {2}", audioBufferPosition, audioData[audioBufferPosition], graphAmplitude));
 				}
+				*/
 				
 				//Broadcast notification
 				ReactiveManager.Instance.amplitudeEvent(amplitudeEventChannel, amplitude, graphAmplitude > amplitudeThreshhold);
@@ -112,7 +114,7 @@ public class MicrophoneFFT : MonoBehaviour
 				int fftInDataIndex = 0;
 				
 				//Graphing stuff
-				//int graphSamplingRate = arraySize / 200;
+				int graphSamplingRate = arraySize / 200;
 
 				
 				//Debug.Log (string.Format ("for (i = {0}; i!= {1}; i += {2} % foo)", previousAudioBufferPosition, audioBufferPosition, incrementAmount));
@@ -135,7 +137,6 @@ public class MicrophoneFFT : MonoBehaviour
 					}
 					
 					//Update graph if needed
-					/*
 					if (graphCounter >= graphSamplingRate && graphIndex < 200) {
 						float graphAmplitude = MathHelper.Map (audioData [i], -1.0f, 1.0f, 0.0f, 100.0f);
 						graph.SetPosition (
@@ -148,11 +149,10 @@ public class MicrophoneFFT : MonoBehaviour
 						);
 						graphIndex++;
 						graphCounter = 0;
-						builder.Append (graphAmplitude).Append (", ");
+						//builder.Append (graphAmplitude).Append (", ");
 					} else if (graphIndex >= 200) {
 						graphIndex = 0;
 					}
-					*/
 				
 					//Count non-zero rows for debugging so I can watch the buffer fill up
 					if (audioData [i] != 0.0f) {
