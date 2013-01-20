@@ -81,10 +81,11 @@ public class RoadController : Reactive {
 		position += speed * Time.deltaTime;	
 		float dx = Time.deltaTime * 2 * (speed / maxSpeed); // at top speed, should be able to cross from left to right (-1 to 1) in 1 second
 		
+		//FIXME: super hack since the rendering is currently inverted on the x axis, just flip player controls to compensate.
 		if (Input.GetKey(KeyCode.LeftArrow)) {
-			playerXOffset -= dx;
-		} else if (Input.GetKey(KeyCode.RightArrow)) {
 			playerXOffset += dx;
+		} else if (Input.GetKey(KeyCode.RightArrow)) {
+			playerXOffset -= dx;
 		}
 		
 		if (Input.GetKey(KeyCode.UpArrow)) {
@@ -278,8 +279,6 @@ public class RoadController : Reactive {
 		float l1 = laneMarkerWidth(w1, lanes);
 		float l2 = laneMarkerWidth(w2, lanes);
 		
-		float lanew1, lanew2, lanex1, lanex2;
-		
 		SubmeshType grass  = (SegmentColor.DARK == color) ? SubmeshType.ROAD_GRASS_DARK   : SubmeshType.ROAD_GRASS_LIGHT;
 		SubmeshType rumble = (SegmentColor.DARK == color) ? SubmeshType.ROAD_RUMBLE_DARK  : SubmeshType.ROAD_RUMBLE_LIGHT;
 		SubmeshType road   = (SegmentColor.DARK == color) ? SubmeshType.ROAD_ASPHALT_DARK : SubmeshType.ROAD_ASPHALT_LIGHT;
@@ -289,30 +288,37 @@ public class RoadController : Reactive {
 		//Grass
 		_polyRenderQueue[(int)grass].Add(
 			makeQuad(
-				width, y2,
-				width, 0,
 				0, 0,
 				0, y2,
+				width, y2,
+				width, 0,
 				-1 //Z-order
-//				0, 0,
-//				0, y2,
-//				width, y2,
-//				width, 0,
 			)
 		);
 		
 		//Left Rumble
 		_polyRenderQueue[(int)rumble].Add(
 			makeQuad(
-				x2-w2, y2,
-				x2-w2-r2, y2,
 				x1-w1-r1, y1,
 				x1-w1, y1,
+				x2-w2, y2,
+				x2-w2-r2, y2,
 				1 //Z-order
 			)
 		);
 		
 		//Right Rumble
+		/* FIXME these aren't displaying for some reason
+		_polyRenderQueue[(int)rumble].Add(
+			makeQuad(
+				x1+w1+r1, y1,
+				x1+w1, y1,
+				x2+w2, y2,
+				x2+w2+r2, y2,
+				1 //Z-order
+			)
+		);
+		*/
 		
 		//Road
 		_polyRenderQueue[(int)road].Add(
@@ -324,6 +330,26 @@ public class RoadController : Reactive {
 				0 //Z-order
 			)
 		);
+		
+		if (isLane) {
+			float lanew1, lanew2, lanex1, lanex2;
+			lanew1 = w1*2/lanes;
+			lanew2 = w2*2/lanes;
+			lanex1 = x1 - w1 + lanew1;
+			lanex2 = x2 - w2 + lanew2;
+			for (int laneIndex = 1; laneIndex < lanes; lanex1 += lanew1, lanex2 += lanew2, laneIndex++) {
+				_polyRenderQueue[(int)lane].Add(
+					makeQuad(
+						lanex1 - l1/2, y1,
+						lanex1 + l1/2, y1,
+						lanex2 + l2/2, y2,
+						lanex2 - l2/2, y2,
+						2
+					)
+				);
+			}
+			
+		}
 		
 		//Debug.Log(string.Format("queueSegment: {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", width,  lanes,  x1,  y1,  w1,  x2,  y2,  w2, color));
 		//Debug.Log(string.Format("Road Quad: ({0},{1}) ({2},{3}) ({4},{5}) ({6},{7})", x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2));
