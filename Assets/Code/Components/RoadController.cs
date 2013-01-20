@@ -37,6 +37,8 @@ public class RoadController : Reactive {
 	public float decel; // 'natural' deceleration rate when neither accelerating, nor braking
 	public float offRoadDecel; // off road deceleration is somewhere in between
 	public float offRoadLimit; // limit when off road deceleration no longer applies (e.g. you can always go at least this speed even when off road)
+	public Color laneSeparatorNormalColor = new Color(0, 0, 0);
+	public Color laneSeparatorHighlightColor = new Color(0.5f, 0.5f, 1);
 	private PlayerVehicleController _playerVehicleController;
 
 	// Use this for initialization
@@ -64,6 +66,8 @@ public class RoadController : Reactive {
 			_polyRenderQueue[i] = new List<Polygon>();
 		}
 		
+		gameObject.GetComponent<MeshRenderer>().materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorNormalColor;
+		
 		resetRoad();
 		//guiTexture.texture = _texture;
 		
@@ -74,6 +78,7 @@ public class RoadController : Reactive {
 		}
 		Debug.Log(builder);
 		*/
+		ReactiveManager.Instance.registerListener(this, getChannels());
 	}
 	
 	// Update is called once per frame
@@ -504,6 +509,12 @@ public class RoadController : Reactive {
 	#region Reactive event handlers
 	
 	public override void reactToAmplitude(uint channel, float amp, bool overThreshold) {
+		Debug.Log("reactToAmp");
+		if (overThreshold) {
+			gameObject.GetComponent<MeshRenderer>().materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorHighlightColor;
+		} else {
+			gameObject.GetComponent<MeshRenderer>().materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorNormalColor;
+		}
 	}
 	public override void reactToBeat(float currentBPM) {
 	}

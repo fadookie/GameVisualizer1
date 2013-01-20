@@ -29,13 +29,15 @@ public class PlayerVehicleController : Reactive {
 		}
 		roadController.registerPlayerVehicleController(this);
 		_sprite = gameObject.GetComponent<OTAnimatingSprite>();
+		
+		ReactiveManager.Instance.registerListener(this, getChannels());
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		bool orientationChanged = false;
 		if (!_orientation.Equals(_oldOrientation)) {
-			Debug.Log("orient THIS");
+			//Debug.Log("orient THIS");
 			orientationChanged = true;
 			switch(_orientation) {
 				case VehicleOrientation.LEFT:
@@ -55,11 +57,11 @@ public class PlayerVehicleController : Reactive {
 		if (orientationChanged || (!_startedPlaying && _speed > 0)) {
 			_startedPlaying = true;
 			_sprite.PlayLoop(_sprite.animationFrameset);
-			Debug.Log("sprite.PlayLoop s:" + _speed);
+			//Debug.Log("sprite.PlayLoop s:" + _speed);
 		} else if (_startedPlaying && _speed <= 0) {
 			_sprite.Pauze();
 			_startedPlaying = false;
-			Debug.Log("sprite.Pauze s:" + _speed);
+			//Debug.Log("sprite.Pauze s:" + _speed);
 		}
 		
 		_oldOrientation = _orientation;

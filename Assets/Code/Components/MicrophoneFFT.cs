@@ -25,6 +25,7 @@ public class MicrophoneFFT : MonoBehaviour
 	
 	public float amplitudeThreshhold = 70.0f;
 	public uint amplitudeEventChannel = 2u;
+	public bool recording = true;
   
 	//Use this for initialization  
 	void Start ()
@@ -54,6 +55,7 @@ public class MicrophoneFFT : MonoBehaviour
     
 	void Update ()
 	{
+		TwiddleMic();
 		if (micConnected && (null != goAudioSource) && (null != goAudioSource.clip)) {
 			
 			int arraySize = goAudioSource.clip.samples * goAudioSource.clip.channels;
@@ -168,29 +170,24 @@ public class MicrophoneFFT : MonoBehaviour
 	
 	void OnGUI ()
 	{  
+	}
+	
+	void TwiddleMic() {
 		//If there is a microphone  
 		if (micConnected) {  
 			//If the audio from any microphone isn't being captured  
-			if (!Microphone.IsRecording(null)) {  
-				//Case the 'Record' button gets pressed  
-				if (GUI.Button(new Rect(Screen.width / 2 - 100, 0, 200, 50), "Record")) {  
+			if (recording ) {  
+				if (!Microphone.IsRecording(null)) {
 					//Start recording and store the audio captured from the microphone at the AudioClip in the AudioSource  
 					goAudioSource.clip = Microphone.Start(null, true, 20, maxFreq);  
-				}  
+				}
 			} else { //Recording is in progress  
-				//Case the 'Stop and Play' button gets pressed  
-				if (GUI.Button (new Rect (Screen.width / 2 - 100, 0, 200, 50), "Stop and Play!")) {  
-					Microphone.End (null); //Stop the audio recording  
-					//goAudioSource.Play(); //Playback the recorded audio  
-				}  
-  
-				GUI.Label(new Rect(Screen.width / 2 - 100, 0, 200, 50), "Recording in progress...");  
+				Microphone.End (null); //Stop the audio recording  
+				recording = false;
+				//goAudioSource.Play(); //Playback the recorded audio  
 			}  
 		} else { // No microphone  
-			//Print a red "Microphone not connected!" message at the center of the screen  
-			GUI.contentColor = Color.red;  
-			GUI.Label(new Rect(Screen.width / 2 - 100, 0, 200, 50), "Microphone not connected!");  
+			Debug.LogError("Mic not connected.");
 		}  
-  
 	}
 }
