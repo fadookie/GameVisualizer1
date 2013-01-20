@@ -41,6 +41,8 @@ public class RoadController : Reactive {
 	private Color[] _originalMaterialColors = new Color[NUM_SUBMESH_TYPES];
 	public float amplitudeColorMapStart = 0;
 	public float amplitudeColorMapStop = 1;
+	private float _hueOffsetSlide = 0;
+	public float hueOffsetSlideAmount = 0.05f;
 	public float hueOffsetTest = 0.3f;
 	private PlayerVehicleController _playerVehicleController;
 
@@ -49,7 +51,7 @@ public class RoadController : Reactive {
 		accel =  maxSpeed / 5;
 		breaking = -maxSpeed;
 		decel = -maxSpeed/5;
-		offRoadDecel = -maxSpeed/2;
+		//offRoadDecel = -maxSpeed/2;
 		offRoadLimit = maxSpeed/4;
 		
 		_texture = new Texture2D(320, 112);
@@ -520,8 +522,10 @@ public class RoadController : Reactive {
 		foreach(SubmeshType matType in submeshTypes) {
 			Material mat =  materials[(int)matType];
 			Color matColor;
-			if (overThreshold || alwaysRecolorMaterials) {
+			
+			if ((alwaysRecolorMaterials || overThreshold)) {
 				float hueOffset = MathHelper.Map(amp, amplitudeColorMapStart, amplitudeColorMapStop, 0, 1);//Random.value; //hueOffsetTest;
+				hueOffset += _hueOffsetSlide;
 				//Color randColorLight =  new Color(Random.value, Random.value, Random.value);
 				//Color randColorDark = new Color(Mathf.Clamp01(randColorLight.r - darkRandomDimValue), Mathf.Clamp01(randColorLight.g - darkRandomDimValue), Mathf.Clamp01(randColorLight.b - darkRandomDimValue));
 				HSBColor hsbColor = new HSBColor(_originalMaterialColors[(int)matType]);
@@ -529,14 +533,17 @@ public class RoadController : Reactive {
 				switch(matType) {
 					case SubmeshType.ROAD_ASPHALT_DARK:
 					case SubmeshType.ROAD_ASPHALT_LIGHT:
-					case SubmeshType.ROAD_LANE_SEPARATOR:
-						hsbColor.s = Mathf.Clamp01(hsbColor.s + 0.5f);
-						hsbColor.b = Mathf.Clamp01(hsbColor.b + 0.5f);
+						//hsbColor.s = Mathf.Clamp01(hsbColor.s + 0.5f);
+						//hsbColor.b = Mathf.Clamp01(hsbColor.b + 0.5f);
 						break;
 					default:
 						break;
 				}
 				matColor = hsbColor.ToColor();
+				
+			} else if (overThreshold && SubmeshType.ROAD_LANE_SEPARATOR == matType) {
+				matColor = new Color(Random.value, Random.value, Random.value);
+				
 			} else {
 				matColor = _originalMaterialColors[(int)matType];
 			}
@@ -553,6 +560,7 @@ public class RoadController : Reactive {
 		}
 	}
 	public override void reactToBeat(float currentBPM) {
+		_hueOffsetSlide += hueOffsetSlideAmount;
 	}
 	
 	#endregion
