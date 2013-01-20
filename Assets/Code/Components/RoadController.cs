@@ -508,7 +508,6 @@ public class RoadController : Reactive {
 	#region Reactive event handlers
 	
 	public override void reactToAmplitude(uint channel, float amp, bool overThreshold) {
-		Debug.Log("reactToAmp");
 		if (overThreshold) {
 			gameObject.GetComponent<MeshRenderer>().materials[(int)SubmeshType.ROAD_LANE_SEPARATOR].color = laneSeparatorHighlightColor;
 		} else {
