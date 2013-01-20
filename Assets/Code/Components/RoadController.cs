@@ -16,6 +16,7 @@ public class RoadController : Reactive {
 	public float width;
 	public float height;
 	private List<Segment> _segments = new List<Segment>();
+	private List<Segment> _segmentRenderQueue = new List<Segment>();
 	public float roadHalfWidth = 2000; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
 	public float segmentLength = 200; // length of a single segment
 	public float rumbleLength = 3;  // number of segments per red/white rumble strip
@@ -55,7 +56,7 @@ public class RoadController : Reactive {
 		width = Screen.width;
 		height = Screen.height;
 		
-		_segments.Add(new Segment());
+		resetRoad();
 		//guiTexture.texture = _texture;
 		
 		/*
@@ -102,7 +103,8 @@ public class RoadController : Reactive {
 		//Only planning to use this to store quads for now.
 		public int submeshIndex;
 		public Vector3[] verts;
-		public int[] tris;
+		public int[] indicies;
+		public const MeshTopology topology = MeshTopology.Quads; //Made this static to save memory since I'm not planning on using anything other than quads yet.
 	}
 	
 	struct Segment {
@@ -196,11 +198,25 @@ public class RoadController : Reactive {
 		     	continue;
 			}
 			
+			queueSegment(width, lanes,
+				segment.p1.screen.x,
+				segment.p1.screen.y,
+				segment.p1.screen.w,
+				segment.p2.screen.x,
+				segment.p2.screen.y,
+				segment.p2.screen.w,
+				segment.color
+			);
+			
 			maxy = segment.p2.screen.y;
 		}
+		
+		//Now, actually render the polygons
+		RenderSegments();
 	}
 	
-	void queueSegment(float width, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SubmeshType type) {
+	void queueSegment(float width, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SegmentColor color) {
+		//Decoupled in case we want to move this to a different class, etc.
 		float r1 = rumbleWidth(w1, lanes);
 		float r2 = rumbleWidth(w2, lanes);
 		float l1 = laneMarkerWidth(w1, lanes);
@@ -212,6 +228,7 @@ public class RoadController : Reactive {
 		Segment segment = new Segment();
 		segment.polygons = new Polygon[4];
 		//Grass
+		/*
 		segment.polygons[0] = makeQuad(
 			(int)SubmeshType.ROAD_GRASS_LIGHT,
 			0, 0,
@@ -219,6 +236,22 @@ public class RoadController : Reactive {
 			width, y2,
 			width, 0
 		);
+		*/
+		
+		segment.polygons[0] =  makeQuad(
+					0,
+					200, 200, //upper right
+					200, 0, //lower right
+					0, 0, //lower left
+					0, 200 //upper left
+				);
+		segment.polygons[1] = makeQuad(
+					1,
+					-100, -100, //upper right
+					-100, 0, //lower right
+					0, 0, //lower left
+					0, -100 //upper left
+				);
 		
 		//Rumble 1
 		/*
@@ -229,6 +262,8 @@ public class RoadController : Reactive {
 			
 		//Rumble 2
 		//Road
+		
+		_segmentRenderQueue.Add(segment);
 	}
 	
 	Polygon makeQuad(int submeshIndex, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
@@ -242,15 +277,12 @@ public class RoadController : Reactive {
         poly.verts[2] = new Vector3(x3, y3, 0);
         poly.verts[3] = new Vector3(x4, y4, 0);
 
-		// Generate triangles indices
-		poly.tris = new int[6];
-		poly.tris[0] = submeshIndex * 4;
-		poly.tris[1] = submeshIndex * 4 + 1;
-		poly.tris[2] = submeshIndex * 4 + 2;
-
-		poly.tris[3] = submeshIndex * 4;
-		poly.tris[4] = submeshIndex * 4 + 3;
-		poly.tris[5] = submeshIndex * 4 + 1;
+		// Generate quad indices
+		poly.indicies = new int[4];
+		poly.indicies[0] = submeshIndex * 4;
+		poly.indicies[1] = submeshIndex * 4 + 1;
+		poly.indicies[2] = submeshIndex * 4 + 2;
+		poly.indicies[3] = submeshIndex * 4 + 3;
 		
 		return poly;
 	}
@@ -263,8 +295,9 @@ public class RoadController : Reactive {
 		return projectedRoadWidth/Mathf.Max(32, 8*lanes);
 	}
 	
-	void RenderSegments() {
-		int subMeshCount = 2;
+	void RenderSegments(){
+	
+			int subMeshCount = 2;
 		Polygon[] subPolygons = new Polygon[subMeshCount];
 		
 		//Create quads
@@ -272,18 +305,18 @@ public class RoadController : Reactive {
 			int polyIndex = 0;
 			subPolygons[polyIndex] = makeQuad(
 				polyIndex,
-				0, 200, //upper left
+				200, 200, //upper right
 				200, 0, //lower right
 				0, 0, //lower left
-				200, 200 //upper right
+				0, 200 //upper left
 			);
 			polyIndex++;
 			subPolygons[polyIndex] = makeQuad(
 				polyIndex,
-				0, -100, //upper left
+				-100, -100, //upper right
 				-100, 0, //lower right
 				0, 0, //lower left
-				-100, -100 //upper right
+				0, -100 //upper left
 			);
 		}
 		
@@ -311,9 +344,101 @@ public class RoadController : Reactive {
 		//Each submesh is assigned to a different material in the Mesh Renderer.
         mesh.subMeshCount = subMeshCount;
         for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
-	        mesh.SetTriangles(subPolygons[submeshIndex].tris, submeshIndex);
+	        mesh.SetIndices(subPolygons[submeshIndex].indicies, Polygon.topology, submeshIndex);
+	        //mesh.SetTriangles(subPolygons[submeshIndex].indicies, submeshIndex);
 		}
         mesh.RecalculateNormals();
+	}
+	
+	void RenderSegmentsNew() {
+		//Initialize mesh
+        Mesh mesh;
+        if (null == gameObject.GetComponent<MeshFilter>().mesh) {
+			mesh = new Mesh();
+			gameObject.GetComponent<MeshFilter>().mesh = mesh;
+		} else {
+			//Re-use existing mesh as reccomended in Unity docs
+			mesh = gameObject.GetComponent<MeshFilter>().mesh;
+			mesh.Clear();
+		}
+        mesh.MarkDynamic();
+        
+		int subMeshCount = 2;
+		//List<Polygon> subPolygons = new List<Polygon>(subMeshCount);
+		/*
+		List<int>[] tris = new List<int>[subMeshCount];
+		for (int i = 0; i < subMeshCount; i++) {
+			tris[i] = new List<int>();
+		}
+		*/
+		for (int segmentIndex = 0; segmentIndex < _segmentRenderQueue.Count; segmentIndex++) {
+			Segment segment = _segmentRenderQueue[segmentIndex];
+			List<Vector3> verts = new List<Vector3>();
+			
+			//Copy quads into mesh vertex data
+			for (int subMeshIndex = 0; subMeshIndex < subMeshCount; subMeshIndex++) {
+				verts.AddRange(segment.polygons[subMeshIndex].verts);
+			}
+			
+			//Create quads
+			/*
+			{
+				int polyIndex = 0;
+				subPolygons[polyIndex] = makeQuad(
+					polyIndex,
+					0, 200, //upper left
+					200, 0, //lower right
+					0, 0, //lower left
+					200, 200 //upper right
+				);
+				polyIndex++;
+				subPolygons[polyIndex] = makeQuad(
+					polyIndex,
+					0, -100, //upper left
+					-100, 0, //lower right
+					0, 0, //lower left
+					-100, -100 //upper right
+				);
+			}
+			*/
+			
+			//Copy quads into mesh vertex data
+			/*
+			const int vertsPerPoly = 4;
+	        Vector3[] verts  = new Vector3[subMeshCount * vertsPerPoly];
+			for (int subMeshIndex = 0, vertsIndex = 0; subMeshIndex < subMeshCount; subMeshIndex++, vertsIndex += vertsPerPoly) {
+				Polygon poly = subPolygons[subMeshIndex];
+				Array.Copy(poly.verts, 0, verts, vertsIndex, vertsPerPoly); 
+			}
+			*/
+			for (int subMeshIndex = 0; subMeshIndex < subMeshCount; subMeshIndex++) {
+				verts.AddRange(segment.polygons[subMeshIndex].verts);
+			}
+			
+			Mesh newMesh = new Mesh();
+	        newMesh.vertices = verts.ToArray();
+	        
+			//Each submesh is assigned to a different material in the Mesh Renderer.
+	        newMesh.subMeshCount = subMeshCount;
+	        for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
+		        newMesh.SetTriangles(segment.polygons[submeshIndex].indicies, submeshIndex);
+			}
+	        for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++) {
+	        	CombineInstance[] ci = new CombineInstance[2];
+	        	ci[0] = new CombineInstance();
+	        	ci[0].mesh = mesh;
+	        	ci[0].subMeshIndex = submeshIndex;
+	        	ci[0].transform = new Matrix4x4(); //FIXME trying to stop crashes but this shouldn't be neccessary
+	        	ci[1] = new CombineInstance();
+	        	ci[1].mesh = newMesh;
+	        	ci[1].subMeshIndex = submeshIndex;
+	        	ci[1].transform = new Matrix4x4();
+				mesh.CombineMeshes(ci, false, false);
+			}
+		}
+        
+        mesh.RecalculateNormals();
+		_segmentRenderQueue.Clear();
 	}
 	
 	#endregion
