@@ -216,7 +216,7 @@ namespace Exocortex.DSP {
 					}
 					_reversedBits[ numberOfBits - 1 ] = reversedBits;
 				}
-			} catch (IndexOutOfRangeException iore) {
+			} catch (IndexOutOfRangeException) {
 				UnityEngine.Debug.Log("Oh fuck");	
 			}
 			return	_reversedBits[ numberOfBits - 1 ];
@@ -426,7 +426,9 @@ namespace Exocortex.DSP {
 		//======================================================================================
 		//======================================================================================
 
+#pragma warning disable 414
 		static private bool		_bufferFLocked	= false;
+#pragma warning restore 414
 		static private float[]	_bufferF		= new float[ 0 ];
 
 		static private void		LockBufferF( int length, ref float[] buffer ) {
@@ -501,7 +503,9 @@ namespace Exocortex.DSP {
 		//======================================================================================
 		//======================================================================================
 		
+#pragma warning disable 414
 		static private bool			_bufferCFLocked	= false;
+#pragma warning restore 414
 		static private ComplexF[]	_bufferCF		= new ComplexF[ 0 ];
 
 		static private void		LockBufferCF( int length, ref ComplexF[] buffer ) {
@@ -579,7 +583,9 @@ namespace Exocortex.DSP {
 		//======================================================================================
 		//======================================================================================
 		
+#pragma warning disable 414
 		static private bool			_bufferCLocked	= false;
+#pragma warning restore 414
 		static private Complex[]	_bufferC		= new Complex[ 0 ];
 
 		static private void		LockBufferC( int length, ref Complex[] buffer ) {

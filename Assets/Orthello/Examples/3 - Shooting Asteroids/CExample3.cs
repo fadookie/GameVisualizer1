@@ -34,9 +34,9 @@ public class CExample3 : MonoBehaviour {
     void Awake()
     {
         // keep our prototypes by de-activating them.
-        a1.gameObject.active = false;
-        a2.gameObject.active = false;
-        a3.gameObject.active = false;
+        a1.gameObject.SetActive(false);
+        a2.gameObject.SetActive(false);
+        a3.gameObject.SetActive(false);
         // By de-acivating a gameobject is becomes invisible but can still
         // be used them to instantiate copies.
     }
@@ -64,7 +64,7 @@ public class CExample3 : MonoBehaviour {
         }
         if (g != null)
         {
-			g.gameObject.active = true;
+			g.gameObject.SetActive(true);
             // Find this new asteroid's animating sprite
             OTAnimatingSprite sprite = g.GetComponent<OTAnimatingSprite>();
             // If a base object was provided use it for size scaling

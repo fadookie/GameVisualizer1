@@ -89,7 +89,9 @@ namespace Exocortex.DSP {
 		
 		//---------------------------------------------------------------------------------------------
 
+#pragma warning disable 414
 		static private bool			_workspaceFLocked	= false;
+#pragma warning restore 414
 		static private ComplexF[]	_workspaceF			= new ComplexF[ 0 ];
 
 		static private void		LockWorkspaceF( int length, ref ComplexF[] workspace ) {

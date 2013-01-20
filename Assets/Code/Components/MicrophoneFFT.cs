@@ -21,7 +21,7 @@ public class MicrophoneFFT : MonoBehaviour
 	private ComplexF[] fftInData = null;
 	private LineRenderer graph = null; //Spectograph for debugging
 	private int graphCounter = 0; //Simple timer for when to sample for the graph
-	private int graphIndex = 0; //Loop counter for when to sample
+	//private int graphIndex = 0; //Loop counter for when to sample
 	
 	public float amplitudeThreshhold = 70.0f;
 	public uint amplitudeEventChannel = 2u;
@@ -76,7 +76,7 @@ public class MicrophoneFFT : MonoBehaviour
 			fftInData = new ComplexF[fftInDataSize];
 			
 			//Debugging info
-			StringBuilder builder = new StringBuilder ();
+			//StringBuilder builder = new StringBuilder ();
 			int numNonZeroData = 0;
 			
 			//Track instantaneous amplitude
@@ -105,7 +105,7 @@ public class MicrophoneFFT : MonoBehaviour
 				int fftInDataIndex = 0;
 				
 				//Graphing stuff
-				int graphSamplingRate = arraySize / 200;
+				//int graphSamplingRate = arraySize / 200;
 
 				
 				//Debug.Log (string.Format ("for (i = {0}; i!= {1}; i += {2} % foo)", previousAudioBufferPosition, audioBufferPosition, incrementAmount));
@@ -176,7 +176,7 @@ public class MicrophoneFFT : MonoBehaviour
 		//If there is a microphone  
 		if (micConnected) {  
 			//If the audio from any microphone isn't being captured  
-			if (recording ) {  
+			if (recording) {  
 				if (!Microphone.IsRecording(null)) {
 					//Start recording and store the audio captured from the microphone at the AudioClip in the AudioSource  
 					goAudioSource.clip = Microphone.Start(null, true, 20, maxFreq);  

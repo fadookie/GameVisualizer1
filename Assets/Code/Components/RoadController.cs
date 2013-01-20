@@ -9,7 +9,6 @@ using System;
 public class RoadController : Reactive {
 
 	
-	private Rect _screenRect = new Rect(0, 0, Screen.width, Screen.height);
 	private Texture2D _texture;
 	//public Material material;
 	public float width;
@@ -235,7 +234,7 @@ public class RoadController : Reactive {
 	}
 	
 	Projection project(Projection p, float cameraX, float cameraY, float cameraZ, float cameraDepth, float width, float height, float roadWidth) {
-	Projection pOld = new Projection(new Vector3(p.world.x, p.world.y, p.world.z), new Vector3(p.camera.x, p.camera.y, p.camera.z), new ScreenInfo(p.screen.x, p.screen.y, p.screen.scale, p.screen.w));
+		//Projection pOld = new Projection(new Vector3(p.world.x, p.world.y, p.world.z), new Vector3(p.camera.x, p.camera.y, p.camera.z), new ScreenInfo(p.screen.x, p.screen.y, p.screen.scale, p.screen.w));
 		p.camera.x     = p.world.x - cameraX;
 	    p.camera.y     = p.world.y - cameraY;
 	    p.camera.z     = p.world.z - cameraZ;

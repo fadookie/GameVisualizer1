@@ -88,7 +88,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 			this.runningAverageBPM = runningAverageBPM;
 		}
 		
-		public string ToString() {
+		public override string ToString() {
 			return string.Format("BPMCapturePoint{{ timestamp:{0}, runningAverageBPM:{1} }}", timestamp, runningAverageBPM);
 		}
 	}	
