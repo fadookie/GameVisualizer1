@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System;
 
-//[RequireComponent (typeof(GUITexture))]
-[RequireComponent (typeof(MeshFilter ))]
+[RequireComponent (typeof(MeshFilter))]
 [RequireComponent (typeof(MeshRenderer))]
 public class RoadController : Reactive {
 
@@ -16,7 +15,8 @@ public class RoadController : Reactive {
 	public float width;
 	public float height;
 	private List<Segment> _segments = new List<Segment>();
-	private List<Polygon>[] _polyRenderQueue = new List<Polygon>[Enum.GetNames(typeof(SubmeshType)).Length]; 
+	public static readonly int NUM_SUBMESH_TYPES = Enum.GetNames(typeof(SubmeshType)).Length;
+	private List<Polygon>[] _polyRenderQueue = new List<Polygon>[NUM_SUBMESH_TYPES]; 
 	public float roadHalfWidth = 2000; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
 	public float segmentLength = 200; // length of a single segment
 	public float rumbleLength = 3;  // number of segments per red/white rumble strip
@@ -103,6 +103,9 @@ public class RoadController : Reactive {
 	
 	#region Road rendering methods and data structures 
 	
+	/// <summary>
+	/// Struct representing a Quad, might generalize it for other types of geometry later.
+	/// </summary>
 	struct Polygon {
 		//Only planning to use this to store quads for now.
 		public Vector3[] verts;
@@ -110,6 +113,9 @@ public class RoadController : Reactive {
 		public const MeshTopology topology = MeshTopology.Quads; //Made this static to save memory since I'm not planning on using anything other than quads yet.
 	}
 	
+	/// <summary>
+	/// Struct representing a horizontal segment of the pseudo-3D road
+	/// </summary>
 	struct Segment {
 		public int index;
 		public float width;
@@ -120,6 +126,9 @@ public class RoadController : Reactive {
 		public Projection p2;
 	}
 	
+	/// <summary>
+	/// Struct to hold information on a point in screen space
+	/// </summary>
 	struct ScreenInfo {
 		public float x;
 		public float y;
@@ -127,6 +136,9 @@ public class RoadController : Reactive {
 		public float w;
 	}
 	
+	/// <summary>
+	/// Struct representing a projection of a point through world, camera, and screen space.
+	/// </summary>
 	struct Projection {
 		public Vector3 world;
 		public Vector3 camera;
@@ -142,11 +154,18 @@ public class RoadController : Reactive {
 		}
 	}
 	
+	/// <summary>
+	/// The color of a segment
+	/// </summary>
 	enum SegmentColor {
 		DARK = 0,
 		LIGHT
 	}
 	
+	/// <summary>
+	/// A list of valid materials for a quad.
+	/// The size of this enum determines the size of _polyRenderQueue.
+	/// </summary>
 	enum SubmeshType {
 		ROAD_ASPHALT_DARK = 0,
 		ROAD_ASPHALT_LIGHT,
@@ -214,8 +233,8 @@ public class RoadController : Reactive {
 			maxy = segment.p2.screen.y;
 		}
 		
-		//Now, actually render the polygons
-		RenderSegments();
+		//Now, commit the queued polygons to our mesh filter
+		CommitPolyRenderQueueToMesh();
 	}
 	
 	void queueSegment(float width, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SegmentColor color) {
@@ -268,6 +287,12 @@ public class RoadController : Reactive {
 
 	}
 	
+	/// <summary>
+	/// Convenience factory for Polygons representing quads
+	/// </summary>
+	/// <returns>
+	/// New Polygon struct with the specified attributes
+	/// </returns>
 	Polygon makeQuad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
 		Polygon poly = new Polygon();
 		
@@ -289,17 +314,22 @@ public class RoadController : Reactive {
 		return projectedRoadWidth/Mathf.Max(32, 8*lanes);
 	}
 	
-	void RenderSegments() {
+	/// <summary>
+	/// Processes queued polygons by turning them into a mesh
+	/// which will be rendered by Unity on the next frame.
+	/// </summary>
+	void CommitPolyRenderQueueToMesh() {
 		//Initialize mesh
-        Mesh mesh;
-		int subMeshCount = 2;
-        if (null == gameObject.GetComponent<MeshFilter>().mesh) {
-			mesh = new Mesh();
-			gameObject.GetComponent<MeshFilter>().mesh = mesh;
-		} else {
+        Mesh mesh =  gameObject.GetComponent<MeshFilter>().mesh;
+		int subMeshCount = NUM_SUBMESH_TYPES;
+        if (null != mesh) {
 			//Re-use existing mesh as reccomended in Unity docs
 			mesh = gameObject.GetComponent<MeshFilter>().mesh;
 			mesh.Clear();
+		} else {
+			//Create new mesh
+			mesh = new Mesh();
+			gameObject.GetComponent<MeshFilter>().mesh = mesh;
 		}
         mesh.subMeshCount = subMeshCount;
         mesh.MarkDynamic();
@@ -323,7 +353,7 @@ public class RoadController : Reactive {
 				
 				//Generate quad indicies for submeshes.
 				//Each submesh is assigned to a different material in the Mesh Renderer.
-				//const int vertsPerPoly = 4; //assuming every poly is a quad
+				//Assume every poly is a quad
 				List<int> currentIndicies = indices[submeshIndex];
 				currentIndicies.Add(oldVertexCount);
 				currentIndicies.Add(oldVertexCount + 1);
