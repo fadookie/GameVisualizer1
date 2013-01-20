@@ -17,7 +17,7 @@ public class RoadController : Reactive {
 	private List<Segment> _segments = new List<Segment>();
 	public static readonly int NUM_SUBMESH_TYPES = Enum.GetNames(typeof(SubmeshType)).Length;
 	private List<Polygon>[] _polyRenderQueue = new List<Polygon>[NUM_SUBMESH_TYPES]; 
-	public float roadHalfWidth = 2000; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
+	public float roadHalfWidth = 200; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
 	public float segmentLength = 200; // length of a single segment
 	public float rumbleLength = 3;  // number of segments per red/white rumble strip
 	public float trackLength; // z length of entire track (computed)
@@ -53,8 +53,12 @@ public class RoadController : Reactive {
 		width = Camera.current.pixelWidth;
 		height = Camera.current.pixelHeight;
 		*/
+		/*
 		width = Screen.width;
 		height = Screen.height;
+		*/
+		width = 1000;
+		height = 1000;
 		
 		for (int i = 0; i < _polyRenderQueue.Length; i++) {
 			_polyRenderQueue[i] = new List<Polygon>();
@@ -124,6 +128,11 @@ public class RoadController : Reactive {
 		public SegmentColor color;
 		public Projection p1;
 		public Projection p2;
+		
+		public override string ToString() {
+			return string.Format("Segment{{index:{0},width:{1},lanes:{2},color:{3},p1:{4},p2:{5}}}", index, width, lanes, color, p1, p2);
+		}
+		
 	}
 	
 	/// <summary>
@@ -134,6 +143,15 @@ public class RoadController : Reactive {
 		public float y;
 		public float scale;
 		public float w;
+		public ScreenInfo(float x, float y, float scale, float w) {
+			this.x = x;
+			this.y = y;
+			this.scale = scale;
+			this.w = w;
+		}
+		public override string ToString() {
+			return string.Format("ScreenInfo{{x:{0},y:{1},scale:{2},w:{3}}}",x,y,scale,w);
+		}
 	}
 	
 	/// <summary>
@@ -152,6 +170,10 @@ public class RoadController : Reactive {
 			this.camera = camera;
 			this.screen = screen;
 		}
+		
+		public override string ToString() {
+			return string.Format("Projection{{world:{0},camera:{1},screen:{2}}}", world, camera, screen);
+		}
 	}
 	
 	/// <summary>
@@ -165,13 +187,16 @@ public class RoadController : Reactive {
 	/// <summary>
 	/// A list of valid materials for a quad.
 	/// The size of this enum determines the size of _polyRenderQueue.
+	/// Corresponding materials should be assigned in the Editor in the Materials array, in order.
 	/// </summary>
 	enum SubmeshType {
 		ROAD_ASPHALT_DARK = 0,
 		ROAD_ASPHALT_LIGHT,
 		ROAD_GRASS_DARK,
 		ROAD_GRASS_LIGHT,
-		ROAD_STRIPE
+		ROAD_RUMBLE_DARK,
+		ROAD_RUMBLE_LIGHT,
+		ROAD_LANE_SEPARATOR
 	}
 	
 	Segment findSegment(float z) {
@@ -182,13 +207,15 @@ public class RoadController : Reactive {
 	}
 	
 	Projection project(Projection p, float cameraX, float cameraY, float cameraZ, float cameraDepth, float width, float height, float roadWidth) {
+	Projection pOld = new Projection(new Vector3(p.world.x, p.world.y, p.world.z), new Vector3(p.camera.x, p.camera.y, p.camera.z), new ScreenInfo(p.screen.x, p.screen.y, p.screen.scale, p.screen.w));
 		p.camera.x     = p.world.x - cameraX;
 	    p.camera.y     = p.world.y - cameraY;
 	    p.camera.z     = p.world.z - cameraZ;
 	    p.screen.scale = cameraDepth/p.camera.z;
-	    p.screen.x     = Mathf.Round((width/2)  + (p.screen.scale * p.camera.x  * width/2));
-	    p.screen.y     = Mathf.Round((height/2) - (p.screen.scale * p.camera.y  * height/2));
-	    p.screen.w     = Mathf.Round(             (p.screen.scale * roadWidth   * width/2));
+	    p.screen.x     = Mathf.Round((width/2.0f)  + (p.screen.scale * p.camera.x  * width/2.0f));
+	    p.screen.y     = Mathf.Round((height/2.0f) - (p.screen.scale * p.camera.y  * height/2.0f));
+	    p.screen.w     = Mathf.Round(             (p.screen.scale * roadWidth   * width/2.0f));
+		//Debug.Log(string.Format("project({0},{1},{2},{3},{4},{5},{6},{7}) => {8}",pOld, cameraX, cameraY, cameraZ, cameraDepth, width, height, roadWidth, p));
 	    return p;
 	}
 	
@@ -213,8 +240,10 @@ public class RoadController : Reactive {
 		
 			Segment segment = _segments[(baseSegment.index + n) % _segments.Count];
 			
+			//Debug.Log(string.Format("BEFORE p1:{0}\np2:{1}",segment.p1, segment.p2));
 			segment.p1 = project(segment.p1, (playerXOffset * roadHalfWidth), cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
 			segment.p2 = project(segment.p2, (playerXOffset * roadHalfWidth), cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			//Debug.Log(string.Format("AFTER p1:{0}\np2:{1}",segment.p1, segment.p2));
 			if ((segment.p1.camera.z <= cameraDepth) || // behind us
         		(segment.p2.screen.y >= maxy)) {          // clip by (already rendered) segment
 		     	continue;
@@ -232,11 +261,16 @@ public class RoadController : Reactive {
 			
 			maxy = segment.p2.screen.y;
 		}
+		//DebugLogSegments();
 		
 		//Now, commit the queued polygons to our mesh filter
 		CommitPolyRenderQueueToMesh();
 	}
 	
+	/// <summary>
+	/// Processes a segment into polygons which are added to the rendering queue.
+	/// FIXME: this is being drawn upside-down, i'm compensating by rotating the road object in the editor but this inverts the x coordinates.
+	/// </summary>
 	void queueSegment(float width, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SegmentColor color) {
 		//Decoupled in case we want to move this to a different class, etc.
 		float r1 = rumbleWidth(w1, lanes);
@@ -245,46 +279,85 @@ public class RoadController : Reactive {
 		float l2 = laneMarkerWidth(w2, lanes);
 		
 		float lanew1, lanew2, lanex1, lanex2;
-		int lane;
+		
+		SubmeshType grass  = (SegmentColor.DARK == color) ? SubmeshType.ROAD_GRASS_DARK   : SubmeshType.ROAD_GRASS_LIGHT;
+		SubmeshType rumble = (SegmentColor.DARK == color) ? SubmeshType.ROAD_RUMBLE_DARK  : SubmeshType.ROAD_RUMBLE_LIGHT;
+		SubmeshType road   = (SegmentColor.DARK == color) ? SubmeshType.ROAD_ASPHALT_DARK : SubmeshType.ROAD_ASPHALT_LIGHT;
+		SubmeshType lane   = SubmeshType.ROAD_LANE_SEPARATOR;
+		bool isLane = (SegmentColor.DARK == color);
 		
 		//Grass
-		/*
-		segment.polygons[0] = makeQuad(
-			(int)SubmeshType.ROAD_GRASS_LIGHT,
-			0, 0,
-			0, y2,
-			width, y2,
-			width, 0
+		_polyRenderQueue[(int)grass].Add(
+			makeQuad(
+				width, y2,
+				width, 0,
+				0, 0,
+				0, y2,
+				-1 //Z-order
+//				0, 0,
+//				0, y2,
+//				width, y2,
+//				width, 0,
+			)
 		);
-		*/
-		_polyRenderQueue[(int)SubmeshType.ROAD_ASPHALT_DARK].Add(
+		
+		//Left Rumble
+		_polyRenderQueue[(int)rumble].Add(
+			makeQuad(
+				x2-w2, y2,
+				x2-w2-r2, y2,
+				x1-w1-r1, y1,
+				x1-w1, y1,
+				1 //Z-order
+			)
+		);
+		
+		//Right Rumble
+		
+		//Road
+		_polyRenderQueue[(int)road].Add(
+			makeQuad(
+				x1-w1, y1,
+				x1+w1, y1,
+				x2+w2, y2,
+				x2-w2, y2,
+				0 //Z-order
+			)
+		);
+		
+		//Debug.Log(string.Format("queueSegment: {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}", width,  lanes,  x1,  y1,  w1,  x2,  y2,  w2, color));
+		//Debug.Log(string.Format("Road Quad: ({0},{1}) ({2},{3}) ({4},{5}) ({6},{7})", x1-w1, y1, x1+w1, y1, x2+w2, y2, x2-w2, y2));
+		
+		
+		/*Test quads
+		_polyRenderQueue[(int)road].Add(
 			makeQuad(
 				200, 200, //upper right
 				200, 0, //lower right
 				0, 0, //lower left
-				0, 200 //upper left
+				0, 200, //upper left
+				0 //Z-order
 			)
 		);
-		_polyRenderQueue[(int)SubmeshType.ROAD_ASPHALT_LIGHT].Add(
+		_polyRenderQueue[(int)stripe].Add(
 			makeQuad(
 				-100, -100, //upper right
 				-100, 0, //lower right
 				0, 0, //lower left
-				0, -100 //upper left
+				0, -100, //upper left
+				0
 			)
 		);
-		
-		//Rumble 1
-		/*
-		segment.polygons[1] = makeQuad (
-			(int)SubmeshType.ROAD_ASPHALT_LIGHT,
-			*/
-			
-			
-		//Rumble 2
-		//Road
-		
-
+		*/
+	}
+	
+	void DebugLogSegments() {
+		StringBuilder debug = new StringBuilder("_segments[\n");
+		foreach (Segment s in _segments) {
+			debug.AppendLine(s + "," );
+		}
+		debug.Append("]");
+		Debug.Log(debug);
 	}
 	
 	/// <summary>
@@ -293,15 +366,16 @@ public class RoadController : Reactive {
 	/// <returns>
 	/// New Polygon struct with the specified attributes
 	/// </returns>
-	Polygon makeQuad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) {
+	Polygon makeQuad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, int zOrder) {
 		Polygon poly = new Polygon();
+		int z = -zOrder;
 		
 		//Make vertices
 		poly.verts = new Vector3[4];
-        poly.verts[0] = new Vector3(x1, y1, 0);
-        poly.verts[1] = new Vector3(x2, y2, 0);
-        poly.verts[2] = new Vector3(x3, y3, 0);
-        poly.verts[3] = new Vector3(x4, y4, 0);
+        poly.verts[0] = new Vector3(x1, y1, z);
+        poly.verts[1] = new Vector3(x2, y2, z);
+        poly.verts[2] = new Vector3(x3, y3, z);
+        poly.verts[3] = new Vector3(x4, y4, z);
 		
 		return poly;
 	}
