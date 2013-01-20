@@ -37,6 +37,7 @@ public class RoadController : Reactive {
 	public float decel; // 'natural' deceleration rate when neither accelerating, nor braking
 	public float offRoadDecel; // off road deceleration is somewhere in between
 	public float offRoadLimit; // limit when off road deceleration no longer applies (e.g. you can always go at least this speed even when off road)
+	private PlayerVehicleController _playerVehicleController;
 
 	// Use this for initialization
 	void Start () {
@@ -84,11 +85,15 @@ public class RoadController : Reactive {
 		position += speed * Time.deltaTime;	
 		float dx = Time.deltaTime * 2 * (speed / maxSpeed); // at top speed, should be able to cross from left to right (-1 to 1) in 1 second
 		
+		PlayerVehicleController.VehicleOrientation orientation = PlayerVehicleController.VehicleOrientation.STRAIGHT;
+		
 		//FIXME: super hack since the rendering is currently inverted on the x axis, just flip player controls to compensate.
 		if (Input.GetKey(KeyCode.LeftArrow)) {
 			playerXOffset += dx;
+			orientation = PlayerVehicleController.VehicleOrientation.LEFT;
 		} else if (Input.GetKey(KeyCode.RightArrow)) {
 			playerXOffset -= dx;
+			orientation = PlayerVehicleController.VehicleOrientation.RIGHT;
 		}
 		
 		if (Input.GetKey(KeyCode.UpArrow)) {
@@ -106,8 +111,22 @@ public class RoadController : Reactive {
 		playerXOffset = Mathf.Clamp(playerXOffset, -2, 2); // dont ever let player go too far out of bounds
 		speed = Mathf.Clamp(speed, 0, maxSpeed); // or exceed maxSpeed
 		
+		_playerVehicleController.VehicleUpdate(speed, orientation);
+		
 		Render();
 	}
+	
+	#region PlayerVehicleController registration
+	
+	public void registerPlayerVehicleController(PlayerVehicleController pvc) {
+		_playerVehicleController = pvc;
+	}
+	
+	public void deregisterPlayerVehicleController(PlayerVehicleController pvc) {
+		_playerVehicleController = null;
+	}
+	
+	#endregion
 	
 	#region Road rendering methods and data structures 
 	
