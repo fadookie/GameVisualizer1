@@ -233,6 +233,20 @@ public class RoadController : Reactive {
 		ROAD_LANE_SEPARATOR
 	}
 	
+	enum RoadLength {
+		NONE = 0,
+		SHORT = 25,
+		MEDIUM = 50,
+		LONG = 100
+	}
+	
+	enum RoadCurve {
+		NONE = 0,
+		EASY = 2,
+		MEDIUM = 4,
+		HARD = 6
+	}
+	
 	Segment findSegment(float z) {
 		if (_segments.Count < 1) {
 			throw new System.Exception("Can't find segment, segments list empty");
