@@ -15,10 +15,13 @@ public class MathHelper {
    * @param ostart lower bound of the value's target range
    * @param ostop upper bound of the value's target range
    */
-  static public float Map(float value,
+	public static float Map(float value,
                                 float istart, float istop,
                                 float ostart, float ostop) {
-    return ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
-  }
+		return ostart + (ostop - ostart) * ((value - istart) / (istop - istart));
+	}
 
+	public static float percentRemaining(float n, float total) {
+		return (n%total)/total;
+	}
 }

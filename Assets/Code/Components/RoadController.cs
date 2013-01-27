@@ -36,6 +36,7 @@ public class RoadController : Reactive {
 	public float decel; // 'natural' deceleration rate when neither accelerating, nor braking
 	public float offRoadDecel; // off road deceleration is somewhere in between
 	public float offRoadLimit; // limit when off road deceleration no longer applies (e.g. you can always go at least this speed even when off road)
+	public float centrifugal = 0.3f;   // centrifugal force multiplier when going around curves
 	//public float darkRandomDimValue = 0.3f;
 	public bool alwaysRecolorMaterials = true;
 	private Color[] _originalMaterialColors = new Color[NUM_SUBMESH_TYPES];
@@ -93,8 +94,11 @@ public class RoadController : Reactive {
 		width = Screen.width * screenScaleFactor;
 		height = Screen.height * screenScaleFactor;
 		
+		Segment playerSegment = findSegment(position + playerZOffset);
+		
 		position += speed * Time.deltaTime;	
-		float dx = Time.deltaTime * 2 * (speed / maxSpeed); // at top speed, should be able to cross from left to right (-1 to 1) in 1 second
+		float speedPercent = speed / maxSpeed;
+		float dx = Time.deltaTime * 2 * speedPercent; // at top speed, should be able to cross from left to right (-1 to 1) in 1 second
 		
 		PlayerVehicleController.VehicleOrientation orientation = PlayerVehicleController.VehicleOrientation.STRAIGHT;
 		
@@ -106,6 +110,9 @@ public class RoadController : Reactive {
 			playerXOffset -= dx;
 			orientation = PlayerVehicleController.VehicleOrientation.RIGHT;
 		}
+		
+		//Apply "centrifugal" force for cornering
+		playerXOffset -= (dx * speedPercent * playerSegment.curve * centrifugal);
 		
 		if (Input.GetKey(KeyCode.UpArrow)) {
 			speed += accel * Time.deltaTime;
@@ -160,6 +167,7 @@ public class RoadController : Reactive {
 		public int lanes;
 		public Polygon[] polygons;
 		public SegmentColor color;
+		public float curve;
 		public Projection p1;
 		public Projection p2;
 		
@@ -267,21 +275,79 @@ public class RoadController : Reactive {
 	    return p;
 	}
 	
+	void addSegment(float curve) {
+		int n = _segments.Count;
+		Segment segment = new Segment();
+		segment.index = n;
+		segment.p1 = new Projection(new Vector3(0, 0, n * segmentLength));
+		segment.p2 = new Projection(new Vector3(0, 0, (n+1) * segmentLength));
+		segment.curve = curve;
+		segment.color = ((Mathf.FloorToInt(n/rumbleLength)%2) != 0) ? SegmentColor.DARK : SegmentColor.LIGHT;
+		_segments.Add(segment);
+	}
+	
+	void addRoad(int enter, int hold, int leave, float curve) {
+		for(int n = 0 ; n < enter ; n++) {
+		  addSegment(Mathfx.Coserp(0f, curve, n/(float)enter));
+		}
+		for(int n = 0 ; n < hold  ; n++) {
+		  addSegment(curve);
+		}
+		for(int n = 0 ; n < leave ; n++) {
+		  addSegment(Mathfx.Hermite(curve, 0f, n/(float)leave));	
+		}
+	}
+	
+	void addStraight(RoadLength length) {
+		addStraight((int)length);
+    }
+    void addStraight(int num) {
+      addRoad(num, num, num, 0);
+	}
+
+    void addCurve(RoadLength length, float curve) {
+      addRoad((int)length, (int)length, (int)length, curve);
+    }
+        
+    void addSCurves() {
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.EASY);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,   (float)RoadCurve.MEDIUM);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,   (float)RoadCurve.EASY);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.EASY);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.MEDIUM);
+    }
+	
 	void resetRoad() {
 		_segments.Clear();
+		
+		/*
 		for (int n = 0; n < numSegments; n++) { //arbitrary road length
-			Segment segment = new Segment();
-			segment.index = n;
-			segment.p1 = new Projection(new Vector3(0, 0, n * segmentLength));
-			segment.p2 = new Projection(new Vector3(0, 0, (n+1) * segmentLength));
-			segment.color = ((Mathf.FloorToInt(n/rumbleLength)%2) != 0) ? SegmentColor.DARK : SegmentColor.LIGHT;
-			_segments.Add(segment);
+			addSegment(MathHelper.Map(Random.value, 0f, 1f, -6f, 6f));
 		}
+		*/
+		
+		addStraight((int)RoadLength.SHORT/4);
+		addSCurves();
+		addStraight(RoadLength.LONG);
+		addCurve(RoadLength.MEDIUM, (float)RoadCurve.MEDIUM);
+		addCurve(RoadLength.LONG, (float)RoadCurve.MEDIUM);
+		addStraight(RoadLength.MEDIUM);
+		addSCurves();
+		addCurve(RoadLength.LONG, -(float)RoadCurve.MEDIUM);
+		addCurve(RoadLength.LONG, (float)RoadCurve.MEDIUM);
+		addStraight(RoadLength.MEDIUM);
+		addSCurves();
+		addCurve(RoadLength.LONG, -(float)RoadCurve.EASY);
+
+		
 		trackLength = _segments.Count * segmentLength;
 	}
 	
 	void Render() {
 		Segment baseSegment = findSegment(position);
+		float basePercent = MathHelper.percentRemaining(position, segmentLength);
+		float dx = -(baseSegment.curve * basePercent); //rate of change of x
+		float x = 0; //spine position of road curve
 		float maxy = cameraHeight;
 		
 		for (int n = 0; n < drawDistance; n++) {
@@ -289,8 +355,12 @@ public class RoadController : Reactive {
 			Segment segment = _segments[(baseSegment.index + n) % _segments.Count];
 			
 			//Debug.Log(string.Format("BEFORE p1:{0}\np2:{1}",segment.p1, segment.p2));
-			segment.p1 = project(segment.p1, (playerXOffset * roadHalfWidth), cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
-			segment.p2 = project(segment.p2, (playerXOffset * roadHalfWidth), cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			segment.p1 = project(segment.p1, (playerXOffset * roadHalfWidth) - x, 		cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			segment.p2 = project(segment.p2, (playerXOffset * roadHalfWidth) - x - dx, 	cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			
+			x += dx;
+			dx += segment.curve;
+			
 			//Debug.Log(string.Format("AFTER p1:{0}\np2:{1}",segment.p1, segment.p2));
 			if ((segment.p1.camera.z <= cameraDepth) || // behind us
         		(segment.p2.screen.y >= maxy)) {          // clip by (already rendered) segment
@@ -317,6 +387,7 @@ public class RoadController : Reactive {
 	
 	/// <summary>
 	/// Processes a segment into polygons which are added to the rendering queue.
+	/// Analagous to Render.segment() in the js example
 	/// FIXME: this is being drawn upside-down, i'm compensating by rotating the road object in the editor but this inverts the x coordinates.
 	/// </summary>
 	void queueSegment(float segmentWidth, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SegmentColor color) {
