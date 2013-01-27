@@ -153,6 +153,33 @@
             <filename>OutRun/ferrari_left2.png</filename>
             <filename>OutRun/ferrari_right1.png</filename>
             <filename>OutRun/ferrari_right2.png</filename>
+            <filename>OutRun/billboard01.png</filename>
+            <filename>OutRun/billboard02.png</filename>
+            <filename>OutRun/billboard03.png</filename>
+            <filename>OutRun/billboard04.png</filename>
+            <filename>OutRun/billboard05.png</filename>
+            <filename>OutRun/boat_house.png</filename>
+            <filename>OutRun/boulder1.png</filename>
+            <filename>OutRun/boulder2.png</filename>
+            <filename>OutRun/boulder3.png</filename>
+            <filename>OutRun/bush1.png</filename>
+            <filename>OutRun/bush2.png</filename>
+            <filename>OutRun/cactus.png</filename>
+            <filename>OutRun/car01.png</filename>
+            <filename>OutRun/car02.png</filename>
+            <filename>OutRun/car03.png</filename>
+            <filename>OutRun/car04.png</filename>
+            <filename>OutRun/column.png</filename>
+            <filename>OutRun/dead_tree1.png</filename>
+            <filename>OutRun/dead_tree2.png</filename>
+            <filename>OutRun/palm_tree.png</filename>
+            <filename>OutRun/semi.png</filename>
+            <filename>OutRun/stump.png</filename>
+            <filename>OutRun/tower.png</filename>
+            <filename>OutRun/tree1.png</filename>
+            <filename>OutRun/tree2.png</filename>
+            <filename>OutRun/truck.png</filename>
+            <filename>OutRun/windmill.png</filename>
         </array>
         <key>ignoreFileList</key>
         <array/>
