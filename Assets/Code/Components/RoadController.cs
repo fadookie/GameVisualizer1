@@ -100,15 +100,23 @@ public class RoadController : Reactive {
 		float speedPercent = speed / maxSpeed;
 		float dx = Time.deltaTime * 2 * speedPercent; // at top speed, should be able to cross from left to right (-1 to 1) in 1 second
 		
-		PlayerVehicleController.VehicleOrientation orientation = PlayerVehicleController.VehicleOrientation.STRAIGHT;
+		bool isAscending = playerSegment.p1.world.y < playerSegment.p2.world.y;
+		PlayerVehicleController.VehicleOrientation orientation =
+			isAscending 
+				? PlayerVehicleController.VehicleOrientation.UPHILL_STRAIGHT 
+				: PlayerVehicleController.VehicleOrientation.STRAIGHT;
 		
 		//FIXME: super hack since the rendering is currently inverted on the x axis, just flip player controls to compensate.
 		if (Input.GetKey(KeyCode.LeftArrow)) {
 			playerXOffset += dx;
-			orientation = PlayerVehicleController.VehicleOrientation.LEFT;
+			orientation = isAscending
+				? PlayerVehicleController.VehicleOrientation.UPHILL_LEFT
+				: PlayerVehicleController.VehicleOrientation.LEFT;
 		} else if (Input.GetKey(KeyCode.RightArrow)) {
 			playerXOffset -= dx;
-			orientation = PlayerVehicleController.VehicleOrientation.RIGHT;
+			orientation = isAscending
+				? PlayerVehicleController.VehicleOrientation.UPHILL_RIGHT
+				: PlayerVehicleController.VehicleOrientation.RIGHT;
 		}
 		
 		//Apply "centrifugal" force for cornering

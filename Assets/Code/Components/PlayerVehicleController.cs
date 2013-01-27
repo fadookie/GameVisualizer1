@@ -46,6 +46,15 @@ public class PlayerVehicleController : Reactive {
 				case VehicleOrientation.RIGHT:
 					_sprite.animationFrameset = "right";
 					break;
+				case VehicleOrientation.UPHILL_LEFT:
+					_sprite.animationFrameset = "uphill_left";
+					break;
+				case VehicleOrientation.UPHILL_RIGHT:
+					_sprite.animationFrameset = "uphill_right";
+					break;
+				case VehicleOrientation.UPHILL_STRAIGHT:
+					_sprite.animationFrameset = "uphill_straight";
+					break;
 				case VehicleOrientation.STRAIGHT:
 				default:
 					_sprite.animationFrameset = "straight";
