@@ -3,6 +3,7 @@ using UnityEngine;
 public class QuadFillScreen:MonoBehaviour
 {
 	public Camera cam;
+	
 	void Setup() {
 		if (null == cam) {
 		throw new System.Exception("Camera must be set");
