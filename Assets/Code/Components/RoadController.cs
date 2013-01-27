@@ -255,6 +255,13 @@ public class RoadController : Reactive {
 		HARD = 6
 	}
 	
+	enum RoadHill {
+		NONE = 0,
+		LOW = 20,
+		MEDIUM = 40,
+		HIGH = 60
+	}
+	
 	Segment findSegment(float z) {
 		if (_segments.Count < 1) {
 			throw new System.Exception("Can't find segment, segments list empty");
@@ -275,26 +282,37 @@ public class RoadController : Reactive {
 	    return p;
 	}
 	
-	void addSegment(float curve) {
+	void addSegment(float curve, float y) {
 		int n = _segments.Count;
 		Segment segment = new Segment();
 		segment.index = n;
-		segment.p1 = new Projection(new Vector3(0, 0, n * segmentLength));
-		segment.p2 = new Projection(new Vector3(0, 0, (n+1) * segmentLength));
+		segment.p1 = new Projection(new Vector3(0, lastY(), n * segmentLength));
+		segment.p2 = new Projection(new Vector3(0, y, (n+1) * segmentLength));
 		segment.curve = curve;
 		segment.color = ((Mathf.FloorToInt(n/rumbleLength)%2) != 0) ? SegmentColor.DARK : SegmentColor.LIGHT;
 		_segments.Add(segment);
 	}
 	
-	void addRoad(int enter, int hold, int leave, float curve) {
+	/// <summary>
+	/// Get Y position of last added segment
+	/// FIXME: This shit ain't gonna work in a ring buffer
+	/// </summary>
+	float lastY() {
+		return (_segments.Count == 0) ? 0f : _segments[_segments.Count - 1].p2.world.y;
+	}
+	
+	void addRoad(int enter, int hold, int leave, float curve, float y) {
+		float startY = lastY();
+		float endY = startY + (y * segmentLength); //FIXME y was being converted to an int in the js version, not sure why
+		float total = enter + hold + leave;
 		for(int n = 0 ; n < enter ; n++) {
-		  addSegment(Mathfx.Coserp(0f, curve, n/(float)enter));
+		  addSegment(Mathfx.Coserp(0f, curve, n/(float)enter), Mathfx.Hermite(startY, endY, n/total));
 		}
 		for(int n = 0 ; n < hold  ; n++) {
-		  addSegment(curve);
+		  addSegment(curve, Mathfx.Hermite(startY, endY, (enter+n)/total));
 		}
 		for(int n = 0 ; n < leave ; n++) {
-		  addSegment(Mathfx.Hermite(curve, 0f, n/(float)leave));	
+		  addSegment(Mathfx.Hermite(curve, 0f, n/(float)leave), Mathfx.Hermite(startY, endY, (enter+hold+n)/total));	
 		}
 	}
 	
@@ -302,20 +320,33 @@ public class RoadController : Reactive {
 		addStraight((int)length);
     }
     void addStraight(int num) {
-      addRoad(num, num, num, 0);
+      addRoad(num, num, num, 0, 0f);
 	}
 
     void addCurve(RoadLength length, float curve) {
-      addRoad((int)length, (int)length, (int)length, curve);
+      addRoad((int)length, (int)length, (int)length, curve, 0f);
     }
         
     void addSCurves() {
-		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.EASY);
-		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,   (float)RoadCurve.MEDIUM);
-		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,   (float)RoadCurve.EASY);
-		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.EASY);
-		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.MEDIUM);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.EASY, 0f);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,   (float)RoadCurve.MEDIUM, 0f);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,   (float)RoadCurve.EASY, 0f);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.EASY, 0f);
+		addRoad((int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM, (int)RoadLength.MEDIUM,  -(float)RoadCurve.MEDIUM, 0f);
     }
+	
+	void addHill(int num, float height) {
+		addRoad(num, num, num, 0f, height);
+	}
+    
+	void addRollingHills(int num, float height) {
+		addRoad(num, num, num, 0f, height/2);
+		addRoad(num, num, num, 0f, -height);
+		addRoad(num, num, num, 0f, height);
+		addRoad(num, num, num, 0f, 0f);
+		addRoad(num, num, num, 0f, height/2);
+		addRoad(num, num, num, 0f, 0f);
+	}
 	
 	void resetRoad() {
 		_segments.Clear();
@@ -327,6 +358,8 @@ public class RoadController : Reactive {
 		*/
 		
 		addStraight((int)RoadLength.SHORT/4);
+		addHill((int)RoadLength.SHORT, (float)RoadHill.LOW);
+		addRollingHills((int)RoadLength.SHORT, (float)RoadHill.LOW);
 		addSCurves();
 		addStraight(RoadLength.LONG);
 		addCurve(RoadLength.MEDIUM, (float)RoadCurve.MEDIUM);
@@ -338,6 +371,16 @@ public class RoadController : Reactive {
 		addStraight(RoadLength.MEDIUM);
 		addSCurves();
 		addCurve(RoadLength.LONG, -(float)RoadCurve.EASY);
+		
+		//Impose hills
+		/*
+		for (int i = 0; i < _segments.Count; i++) { 
+			Segment segment = _segments[i];
+			segment.p1.world.y = MathHelper.Map(Mathf.Sin( i / 2f), 	0, 360 * Mathf.Deg2Rad, 0, 60);
+			segment.p2.world.y = MathHelper.Map(Mathf.Sin((i / 2f)+1), 	0, 360 * Mathf.Deg2Rad, 0, 60);
+			Debug.Log(string.Format("segment {0} / {1}", segment.p1.world.y, segment.p2.world.y));
+		}
+		*/
 
 		
 		trackLength = _segments.Count * segmentLength;
@@ -346,6 +389,9 @@ public class RoadController : Reactive {
 	void Render() {
 		Segment baseSegment = findSegment(position);
 		float basePercent = MathHelper.percentRemaining(position, segmentLength);
+		Segment playerSegment = findSegment(position + playerZOffset);
+		float playerPercent = MathHelper.percentRemaining(position+playerZOffset, segmentLength);
+		float playerY = Mathf.Lerp(playerSegment.p1.world.y, playerSegment.p2.world.y, playerPercent);
 		float dx = -(baseSegment.curve * basePercent); //rate of change of x
 		float x = 0; //spine position of road curve
 		float maxy = cameraHeight;
@@ -355,8 +401,8 @@ public class RoadController : Reactive {
 			Segment segment = _segments[(baseSegment.index + n) % _segments.Count];
 			
 			//Debug.Log(string.Format("BEFORE p1:{0}\np2:{1}",segment.p1, segment.p2));
-			segment.p1 = project(segment.p1, (playerXOffset * roadHalfWidth) - x, 		cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
-			segment.p2 = project(segment.p2, (playerXOffset * roadHalfWidth) - x - dx, 	cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			segment.p1 = project(segment.p1, (playerXOffset * roadHalfWidth) - x, 		playerY + cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			segment.p2 = project(segment.p2, (playerXOffset * roadHalfWidth) - x - dx, 	playerY + cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
 			
 			x += dx;
 			dx += segment.curve;
