@@ -374,8 +374,8 @@ public class RoadController : Reactive {
 		*/
 		
 		addStraight((int)RoadLength.SHORT/4);
-		addHill((int)RoadLength.SHORT, (float)RoadHill.LOW);
-		addRollingHills((int)RoadLength.SHORT, (float)RoadHill.LOW);
+		//addHill((int)RoadLength.SHORT, (float)RoadHill.LOW);
+		//addRollingHills((int)RoadLength.SHORT, (float)RoadHill.LOW);
 		addSCurves();
 		addStraight(RoadLength.LONG);
 		addCurve(RoadLength.MEDIUM, (float)RoadCurve.MEDIUM);
@@ -411,8 +411,9 @@ public class RoadController : Reactive {
 		float dx = -(baseSegment.curve * basePercent); //rate of change of x
 		float x = 0; //spine position of road curve
 		float maxy = cameraHeight;
+		float z = 0;
 		
-		for (int n = 0; n < drawDistance; n++) {
+		for (int n = 0; n < drawDistance; n++, z++) {
 		
 			Segment segment = _segments[(baseSegment.index + n) % _segments.Count];
 			
@@ -436,7 +437,8 @@ public class RoadController : Reactive {
 				segment.p2.screen.x,
 				segment.p2.screen.y,
 				segment.p2.screen.w,
-				segment.color
+				segment.color,
+				z
 			);
 			
 			maxy = segment.p2.screen.y;
@@ -452,7 +454,7 @@ public class RoadController : Reactive {
 	/// Analagous to Render.segment() in the js example
 	/// FIXME: this is being drawn upside-down, i'm compensating by rotating the road object in the editor but this inverts the x coordinates.
 	/// </summary>
-	void queueSegment(float segmentWidth, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SegmentColor color) {
+	void queueSegment(float segmentWidth, int lanes, float x1, float y1, float w1, float x2, float y2, float w2, SegmentColor color, float z) {
 		//Decoupled in case we want to move this to a different class, etc.
 		float r1 = rumbleWidth(w1, lanes);
 		float r2 = rumbleWidth(w2, lanes);
@@ -472,7 +474,7 @@ public class RoadController : Reactive {
 				segmentWidth, y1,
 				segmentWidth, y2,
 				0, y2,
-				-1 //Z-order
+				z //Z-order
 			)
 		);
 		
@@ -483,7 +485,7 @@ public class RoadController : Reactive {
 				x1-w1, y1,
 				x2-w2, y2,
 				x2-w2-r2, y2,
-				1 //Z-order
+				z - 2 //Z-order
 			)
 		);
 		
@@ -494,7 +496,7 @@ public class RoadController : Reactive {
 				x1+w1+r1, y1,
 				x2+w2+r2, y2,
 				x2+w2, y2,
-				1 //Z-order
+				z - 2 //Z-order
 			)
 		);
 		
@@ -505,7 +507,7 @@ public class RoadController : Reactive {
 				x1+w1, y1,
 				x2+w2, y2,
 				x2-w2, y2,
-				0 //Z-order
+				z - 1 //Z-order
 			)
 		);
 		
@@ -522,7 +524,7 @@ public class RoadController : Reactive {
 						lanex1 + l1/2, y1,
 						lanex2 + l2/2, y2,
 						lanex2 - l2/2, y2,
-						2
+						z - 2
 					)
 				);
 			}
@@ -570,9 +572,9 @@ public class RoadController : Reactive {
 	/// <returns>
 	/// New Polygon struct with the specified attributes
 	/// </returns>
-	Polygon makeQuad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, int zOrder) {
+	Polygon makeQuad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, float zOrder) {
 		Polygon poly = new Polygon();
-		int z = -zOrder;
+		float z = zOrder;
 		
 		//Make vertices
 		poly.verts = new Vector3[4];
