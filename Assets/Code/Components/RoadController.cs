@@ -411,13 +411,16 @@ public class RoadController : Reactive {
 		*/
 		//Add random sprites
 		OTContainer atlasOutrun = GameObject.FindGameObjectWithTag("atlasOutrun").GetComponent<OTContainer>(); //OT.ContainerByName was returning null here, orthello might not be fully set-up yet
+		OTSprite baseSprite = OT.CreateObject(OTObjectType.Sprite).GetComponent<OTSprite>();
+		baseSprite.name = "baseSprite";
 		for (int i = 0; i < _segments.Count; i += 10) { 
 			Segment segment = _segments[i];
 			Sprite sprite = new Sprite();
-			sprite.otSprite = OT.CreateObject(OTObjectType.Sprite).GetComponent<OTSprite>();
+			sprite.otSprite = (OTSprite)Instantiate(baseSprite);
 			sprite.otSprite.transparent = true;
 			sprite.otSprite.spriteContainer = atlasOutrun;
 			sprite.otSprite.frameName = "palm_tree";
+			sprite.otSprite.name = "palm_tree_A";
 			segment.sprites.Add(sprite);
 			break;
 		}
