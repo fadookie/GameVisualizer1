@@ -13,7 +13,7 @@ public class RoadController : Reactive {
 	public float width;
 	public float height;
 	private List<Segment> _segments = new List<Segment>();
-	private List<Sprite> _sprites = new List<Sprite>();
+	//private List<Sprite> _sprites = new List<Sprite>();
 	public static readonly int NUM_SUBMESH_TYPES = System.Enum.GetNames(typeof(SubmeshType)).Length;
 	private List<Polygon>[] _polyRenderQueue = new List<Polygon>[NUM_SUBMESH_TYPES]; 
 	public float roadHalfWidth = 200; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
@@ -183,6 +183,7 @@ public class RoadController : Reactive {
 		public float curve;
 		public Projection p1;
 		public Projection p2;
+		public List<Sprite> sprites;
 		
 		public override string ToString() {
 			return string.Format("Segment{{index:{0},width:{1},lanes:{2},color:{3},p1:{4},p2:{5}}}", index, width, lanes, color, p1, p2);
@@ -191,10 +192,16 @@ public class RoadController : Reactive {
 	}
 	
 	struct Sprite {
-		public Segment segment;
+		//public Segment segment;
 		public float offset;
-		public string framesetName;
+		//public string framesetName;
 		public OTSprite otSprite;
+		
+		/*
+		Sprite(OTSprite otSprite) {
+			this.otSprite = otSprite;
+		}
+		*/
 	}
 	
 	/// <summary>
@@ -305,6 +312,7 @@ public class RoadController : Reactive {
 	void addSegment(float curve, float y) {
 		int n = _segments.Count;
 		Segment segment = new Segment();
+		segment.sprites = new List<Sprite>(0);
 		segment.index = n;
 		segment.p1 = new Projection(new Vector3(0, lastY(), n * segmentLength));
 		segment.p2 = new Projection(new Vector3(0, y, (n+1) * segmentLength));
@@ -401,7 +409,18 @@ public class RoadController : Reactive {
 			Debug.Log(string.Format("segment {0} / {1}", segment.p1.world.y, segment.p2.world.y));
 		}
 		*/
-
+		//Add random sprites
+		OTContainer atlasOutrun = GameObject.FindGameObjectWithTag("atlasOutrun").GetComponent<OTContainer>(); //OT.ContainerByName was returning null here, orthello might not be fully set-up yet
+		for (int i = 0; i < _segments.Count; i += 10) { 
+			Segment segment = _segments[i];
+			Sprite sprite = new Sprite();
+			sprite.otSprite = OT.CreateObject(OTObjectType.Sprite).GetComponent<OTSprite>();
+			sprite.otSprite.transparent = true;
+			sprite.otSprite.spriteContainer = atlasOutrun;
+			sprite.otSprite.frameName = "palm_tree";
+			segment.sprites.Add(sprite);
+			break;
+		}
 		
 		trackLength = _segments.Count * segmentLength;
 	}
@@ -444,6 +463,12 @@ public class RoadController : Reactive {
 				segment.color,
 				z
 			);
+			
+			//Update sprites
+			foreach (Sprite sprite in segment.sprites) {
+				Debug.Log(sprite);
+				//sprite.otSprite.depth = (int)z; //FIXME if we ever start use fractional z values this will be inaccurate
+			}
 			
 			maxy = segment.p2.screen.y;
 		}
