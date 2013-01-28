@@ -13,6 +13,7 @@ public class RoadController : Reactive {
 	public float width;
 	public float height;
 	private List<Segment> _segments = new List<Segment>();
+	private List<Sprite> _sprites = new List<Sprite>();
 	public static readonly int NUM_SUBMESH_TYPES = System.Enum.GetNames(typeof(SubmeshType)).Length;
 	private List<Polygon>[] _polyRenderQueue = new List<Polygon>[NUM_SUBMESH_TYPES]; 
 	public float roadHalfWidth = 200; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
@@ -183,6 +184,13 @@ public class RoadController : Reactive {
 			return string.Format("Segment{{index:{0},width:{1},lanes:{2},color:{3},p1:{4},p2:{5}}}", index, width, lanes, color, p1, p2);
 		}
 		
+	}
+	
+	struct Sprite {
+		public Segment segment;
+		public float offset;
+		public string framesetName;
+		public OTSprite otSprite;
 	}
 	
 	/// <summary>
