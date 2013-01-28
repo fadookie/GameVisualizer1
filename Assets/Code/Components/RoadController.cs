@@ -47,6 +47,8 @@ public class RoadController : Reactive {
 	public float hueOffsetSlideAmount = 0.05f;
 	public float hueOffsetTest = 0.3f;
 	private PlayerVehicleController _playerVehicleController;
+	
+	#region MonoBehaviour handlers
 
 	// Use this for initialization
 	void Start () {
@@ -143,6 +145,8 @@ public class RoadController : Reactive {
 		Render();
 	}
 	
+	#endregion
+	
 	#region PlayerVehicleController registration
 	
 	public void registerPlayerVehicleController(PlayerVehicleController pvc) {
@@ -155,7 +159,7 @@ public class RoadController : Reactive {
 	
 	#endregion
 	
-	#region Road rendering methods and data structures 
+	#region Road construction methods and data structures 
 	
 	/// <summary>
 	/// Struct representing a Quad, might generalize it for other types of geometry later.
@@ -448,6 +452,10 @@ public class RoadController : Reactive {
 		//Now, commit the queued polygons to our mesh filter
 		CommitPolyRenderQueueToMesh();
 	}
+	
+	#endregion
+	
+	#region Road rendering methods
 	
 	/// <summary>
 	/// Processes a segment into polygons which are added to the rendering queue.
