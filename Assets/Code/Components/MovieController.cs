@@ -23,7 +23,8 @@ public class MovieController : Reactive {
 	public float duration;
 	public List<Material> materials = new List<Material>();
 
-	MovieTexture movie;
+	HashSet<MovieTexture> _movies = new HashSet<MovieTexture>();
+	MovieTexture _currentMovie;
 	MeshRenderer renderer;
 	bool _visible = true; //Is ToggleVisibility() in effect? This ovverrides null material handling in CycleMaterial()
 	uint _currentMaterialIndex = 0;
@@ -39,6 +40,7 @@ public class MovieController : Reactive {
 			if (null != mat && !(mat.mainTexture is MovieTexture)) {
 				throw new System.Exception("All materials must have MovieTextures");
 			}
+			_movies.Add((MovieTexture)mat.mainTexture);
 		}
 		
 		_visible = renderer.enabled;
@@ -49,24 +51,24 @@ public class MovieController : Reactive {
 			throw new System.Exception("Texture must be a MovieTexture");
 		}
 		
-		movie = renderer.material.mainTexture as MovieTexture;
-		duration = movie.duration;
+		_currentMovie = renderer.material.mainTexture as MovieTexture;
+		duration = _currentMovie.duration;
 		
 		ReactiveManager.Instance.registerListener(this, getChannels());
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		if (loop != movie.loop) {
-			movie.loop = loop;
+		if (loop != _currentMovie.loop) {
+			_currentMovie.loop = loop;
 		}
-		if (filterMode != movie.filterMode) {
-			movie.filterMode = filterMode;
+		if (filterMode != _currentMovie.filterMode) {
+			_currentMovie.filterMode = filterMode;
 		}
-		if (play && !movie.isPlaying) {
-			movie.Play();	
-		} else if (!play && movie.isPlaying) {
-			movie.Pause();
+		if (play && !_currentMovie.isPlaying) {
+			_currentMovie.Play();	
+		} else if (!play && _currentMovie.isPlaying) {
+			_currentMovie.Pause();
 		}
 	}
 	
@@ -76,23 +78,17 @@ public class MovieController : Reactive {
 	}
 	
 	public override void reactToBeat(float currentBPM) {
-		if (toggleVisibility) {
-			if (++_visibilityCounter >= visibilityFrequency) {
+		if (toggleVisibility && (++_visibilityCounter >= visibilityFrequency)) {
 				_visibilityCounter = 0;
 				ToggleVisibility();
-			}
 		}
-		if (cycleMaterial) {
-			if (++_materialCounter >= materialFrequency) {
+		if (cycleMaterial && (++_materialCounter >= materialFrequency)) {
 				_materialCounter = 0;
 				CycleMaterial();
-			}
 		}
-		if (togglePlayback) {
-			if (++_playbackCounter >= playbackFrequency) {
+		if (togglePlayback && (++_playbackCounter >= playbackFrequency)) {
 				_playbackCounter = 0;
 				TogglePlayback();
-			}
 		}
 	}
 	
@@ -107,16 +103,16 @@ public class MovieController : Reactive {
 	}
 	
 	void TogglePlayback() {
-		if (movie.isPlaying) {
+		if (_currentMovie.isPlaying) {
 			play = false;
 			if (!retrigger) {
-				movie.Pause();
+				_currentMovie.Pause();
 			} else {
-				movie.Stop();
+				_currentMovie.Stop();
 			}
 		} else {
 			play = true;
-			movie.Play();
+			_currentMovie.Play();
 		}
 	}
 	
@@ -125,8 +121,11 @@ public class MovieController : Reactive {
 		Material nextMat  = materials[(int)(++_currentMaterialIndex % materials.Count)];
 		if (null == nextMat) {
 			renderer.enabled = false; //No material is set in this slot, so just don't render
-		} else if (null == oldMat && _visible) {
-			renderer.enabled = true;
+		} else {
+			_currentMovie = (MovieTexture)nextMat.mainTexture;
+			if (null == oldMat && _visible) {
+				renderer.enabled = true;
+			}
 		}
 		renderer.sharedMaterial = nextMat;
 		//Debug.Log(string.Format("renderer.sharedMaterial = {0} <- {1} (materials[{2}] / {3})", renderer.sharedMaterial, materials[_currentMaterialIndex % materials.Count], _currentMaterialIndex % materials.Count, materials.Count));
