@@ -169,15 +169,18 @@ public class MicrophoneFFT : MonoBehaviour
 				
 				//Graph FFT
 				for (int fftGraphIndex = 0; fftGraphIndex < GRAPH_VERTEX_COUNT; fftGraphIndex++) {
-					float graphAmplitude = fftInData[fftGraphIndex].Re;//MathHelper.Map (fftInData[i].Re, -1.0f, 1.0f, 0.0f, 100.0f);
-					graph.SetPosition (
-						fftGraphIndex,
-						new Vector3 (
+					try {
+						float graphAmplitude = fftInData[fftGraphIndex].Re;//MathHelper.Map (fftInData[i].Re, -1.0f, 1.0f, 0.0f, 100.0f);
+						graph.SetPosition (
 							fftGraphIndex,
-							graphAmplitude,
-							0
-						)
-					);
+							new Vector3 (
+								fftGraphIndex,
+								graphAmplitude,
+								0
+							)
+						);
+					} catch (System.IndexOutOfRangeException) {
+					}
 					//builder.Append (graphAmplitude).Append (", ");
 				}
 				//Debug.Log ("i == " + i + " delta from current: " + (audioBufferPosition - i));
