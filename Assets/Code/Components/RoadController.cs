@@ -386,8 +386,8 @@ public class RoadController : Reactive {
 		*/
 		
 		addStraight((int)RoadLength.SHORT/4);
-		//addHill((int)RoadLength.SHORT, (float)RoadHill.LOW);
-		//addRollingHills((int)RoadLength.SHORT, (float)RoadHill.LOW);
+		addHill((int)RoadLength.SHORT, (float)RoadHill.LOW);
+		addRollingHills((int)RoadLength.SHORT, (float)RoadHill.LOW);
 		addSCurves();
 		addStraight(RoadLength.LONG);
 		addCurve(RoadLength.MEDIUM, (float)RoadCurve.MEDIUM);
@@ -410,6 +410,7 @@ public class RoadController : Reactive {
 		}
 		*/
 		//Add random sprites
+		/*
 		OTContainer atlasOutrun = GameObject.FindGameObjectWithTag("atlasOutrun").GetComponent<OTContainer>(); //OT.ContainerByName was returning null here, orthello might not be fully set-up yet
 		OTSprite baseSprite = OT.CreateObject(OTObjectType.Sprite).GetComponent<OTSprite>();
 		baseSprite.name = "baseSprite";
@@ -424,6 +425,7 @@ public class RoadController : Reactive {
 			segment.sprites.Add(sprite);
 			break;
 		}
+		*/
 		
 		trackLength = _segments.Count * segmentLength;
 	}

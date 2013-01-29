@@ -1,18 +1,26 @@
 using UnityEngine;
 using System.Collections;
 
+[RequireComponent (typeof(MeshRenderer))]
 [RequireComponent (typeof(Material))]
 public class MovieController : Reactive {
 
 	public bool play = false;
 	public bool loop = false;
+	public bool retrigger = false;
 	public FilterMode filterMode = FilterMode.Point;
+	public float duration;
 
 	MovieTexture movie;
+	MeshRenderer renderer;
 	// Use this for initialization
 	void Start () {
 		// this line of code will make the Movie Texture begin playing
+		renderer = gameObject.GetComponent<MeshRenderer>();
 		movie = (MovieTexture)renderer.material.mainTexture;
+		duration = movie.duration;
+		
+		ReactiveManager.Instance.registerListener(this, getChannels());
 	}
 	
 	// Update is called once per frame
@@ -36,6 +44,19 @@ public class MovieController : Reactive {
 	}
 	
 	public override void reactToBeat(float currentBPM) {
+		if (movie.isPlaying) {
+			play = false;
+			renderer.enabled = false;
+			if (!retrigger) {
+				movie.Pause();
+			} else {
+				movie.Stop();
+			}
+		} else {
+			renderer.enabled = true;
+			play = true;
+			movie.Play();
+		}
 	}
 	
 	#endregion	
