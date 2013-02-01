@@ -111,7 +111,7 @@
             <enum type="AndEngine::MagFilter">MagLinear</enum>
         </struct>
         <key>dataFileName</key>
-        <filename>../../../../Assets/Art/Textures/Sprites/OutRun.xml</filename>
+        <filename>../../../../Assets/Art/Textures/Sprites/OutRun.plist</filename>
         <key>mainExtension</key>
         <string></string>
         <key>forceIdenticalLayout</key>
@@ -180,6 +180,8 @@
             <filename>OutRun/tree2.png</filename>
             <filename>OutRun/truck.png</filename>
             <filename>OutRun/windmill.png</filename>
+            <filename>SlimeGirls/SlimeDCarFront02.png</filename>
+            <filename>SlimeGirls/SlimeDCarFront01.png</filename>
         </array>
         <key>ignoreFileList</key>
         <array/>
