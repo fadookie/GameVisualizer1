@@ -111,6 +111,9 @@ public class MovieController : Reactive {
 			_currentMovie = (MovieTexture)mat.mainTexture;
 			_currentMovie.Play();
 			play = true;
+			visible = true;
+		} else {
+			Debug.Log(string.Format("Title card \"{0}\" not found.", titleCardName));
 		}
 	}
 	
