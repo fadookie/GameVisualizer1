@@ -19,8 +19,8 @@ public class SongPreset {
 public class GameManager : MonoSingleton<GameManager>
 {
 	public GameState gameState = GameState.TitleCard;
+	public int _currentPreset = 0;
 	public SongPreset[] songPresets;
-	uint _currentPreset = 0;
 	public string skipBackKey = "[";
 	public string skipForwardKey = "]";
 	public string toggleTitleKey = "t";
@@ -35,16 +35,17 @@ public class GameManager : MonoSingleton<GameManager>
 	}
 	
 	void Start() {
+		logPreset();
 	}
 	
 	void Update() {
 		//Process input
 		bool presetChanged = false;
 		if (Input.GetKeyDown(skipBackKey)) {
-			_currentPreset = (uint)MathHelper.Mod((int)_currentPreset - 1, songPresets.Length);
+			_currentPreset = MathHelper.Mod(_currentPreset - 1, songPresets.Length);
 			presetChanged = true;
 		} else if (Input.GetKeyDown(skipForwardKey)) {
-			_currentPreset = (uint)MathHelper.Mod((int)_currentPreset + 1, songPresets.Length);
+			_currentPreset = MathHelper.Mod(_currentPreset + 1, songPresets.Length);
 			presetChanged = true;
 		}
 		if (Input.GetKeyDown(toggleTitleKey)) {
@@ -54,12 +55,16 @@ public class GameManager : MonoSingleton<GameManager>
 		//Process state change
 		if (presetChanged) {
 			SongPreset currentPreset = songPresets[_currentPreset];
-			Debug.Log("Activate " + currentPreset.ToString());
+			logPreset();
 			//Push state to MovieController
 			MovieController movieController = GameObject.FindGameObjectWithTag("MovieController").GetComponent<MovieController>();
 			
 			//Push state to TempoManager
 			TempoManager.instance.pendingBPM = currentPreset.BPM;
 		}
+	}
+	
+	void logPreset() {
+		Debug.Log("Activate " + songPresets[_currentPreset].ToString());
 	}
 }
