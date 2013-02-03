@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -22,28 +23,30 @@ public class MovieController : Reactive {
 	public FilterMode filterMode = FilterMode.Point;
 	public float duration;
 	public List<Material> materials = new List<Material>();
+	public List<Material> titleCards = new List<Material>();
 
 	HashSet<MovieTexture> _movies = new HashSet<MovieTexture>();
 	MovieTexture _currentMovie;
-	MeshRenderer renderer;
-	bool _visible = true; //Is ToggleVisibility() in effect? This ovverrides null material handling in CycleMaterial()
+	public bool visible = true; //Should we render? Set externally and by ToggleVisibility(). This ovverrides null material handling in CycleMaterial()
 	uint _currentMaterialIndex = 0;
+	
 	// Use this for initialization
 	void Start () {
-		renderer = gameObject.GetComponent<MeshRenderer>();
-		
 		//Sanity checks
 		if (materials.Count < 1) {
 			throw new System.Exception("At least one material must be assigned!");
 		}
-		foreach (Material mat in materials) {
-			if (null != mat && !(mat.mainTexture is MovieTexture)) {
-				throw new System.Exception("All materials must have MovieTextures");
-			}
-			_movies.Add((MovieTexture)mat.mainTexture);
-		}
 		
-		_visible = renderer.enabled;
+		Action<ICollection> processMovies = delegate(ICollection collection) {
+			foreach (Material mat in collection) {
+				if (null != mat && !(mat.mainTexture is MovieTexture)) {
+					throw new System.Exception("All materials must have MovieTextures");
+				}
+				_movies.Add((MovieTexture)mat.mainTexture);
+			}
+		};
+		processMovies(materials);
+		processMovies(titleCards);
 		
 		//Apply material 0
 		renderer.sharedMaterial = materials[0];
@@ -59,6 +62,7 @@ public class MovieController : Reactive {
 	
 	// Update is called once per frame
 	void Update () {
+		renderer.enabled = visible;
 		if (loop != _currentMovie.loop) {
 			_currentMovie.loop = loop;
 		}
@@ -72,32 +76,83 @@ public class MovieController : Reactive {
 		}
 	}
 	
+	#region Playback control
+	
+	public void pauseAll() {
+		foreach (MovieTexture movie in _movies) {
+			movie.Pause();
+		}
+		play = false;
+	}
+	
+	public void stopAll() {
+		foreach (MovieTexture movie in _movies) {
+			movie.Stop();
+		}
+		play = false;
+	}
+	
+	#endregion
+	
+	#region State control (called by GameManager)
+	
+	public void showTitleCard(string titleCardName) {
+		stopAll();
+		Material mat = null;
+		foreach (Material m in titleCards) {
+			if (m.name.Equals(titleCardName)) {
+				mat = m;
+				break;
+			}
+		}
+		if (null != mat) {
+			renderer.enabled = true;
+			renderer.sharedMaterial = mat;
+			_currentMovie = (MovieTexture)mat.mainTexture;
+			_currentMovie.Play();
+			play = true;
+		}
+	}
+	
+	public void visualizerMode(bool playNow) {
+		stopAll();
+		play = playNow;
+		renderer.enabled = visible;
+		renderer.sharedMaterial = materials[(int)(_currentMaterialIndex % materials.Count)];
+		_currentMovie = (MovieTexture)renderer.sharedMaterial.mainTexture;
+		if (play) _currentMovie.Play();
+	}
+	
+	#endregion
+	
 	#region Reactive event handlers
 	
 	public override void reactToAmplitude(uint channel, float amp, bool overThreshold) {
 	}
 	
 	public override void reactToBeat(float currentBPM) {
-		if (toggleVisibility && (++_visibilityCounter >= visibilityFrequency)) {
-				_visibilityCounter = 0;
-				ToggleVisibility();
-		}
-		if (cycleMaterial && (++_materialCounter >= materialFrequency)) {
-				_materialCounter = 0;
-				CycleMaterial();
-		}
-		if (togglePlayback && (++_playbackCounter >= playbackFrequency)) {
-				_playbackCounter = 0;
-				TogglePlayback();
+		if (GameManager.GameState.Visualizer == GameManager.instance.gameState) {
+			if (toggleVisibility && (++_visibilityCounter >= visibilityFrequency)) {
+					_visibilityCounter = 0;
+					ToggleVisibility();
+			}
+			if (cycleMaterial && (++_materialCounter >= materialFrequency)) {
+					_materialCounter = 0;
+					CycleMaterial();
+			}
+			if (togglePlayback && (++_playbackCounter >= playbackFrequency)) {
+					_playbackCounter = 0;
+					TogglePlayback();
+			}
 		}
 	}
 	
 	void ToggleVisibility() {
-		if (_visible) {
-			_visible = false;
+		if (visible) {
+			visible = false;
 			renderer.enabled = false;
 		} else if (null != renderer.sharedMaterial) {
-			_visible = true;
+			visible = true;
 			renderer.enabled = true;
 		}
 	}
@@ -123,7 +178,7 @@ public class MovieController : Reactive {
 			renderer.enabled = false; //No material is set in this slot, so just don't render
 		} else {
 			_currentMovie = (MovieTexture)nextMat.mainTexture;
-			if (null == oldMat && _visible) {
+			if (null == oldMat && visible) {
 				renderer.enabled = true;
 			}
 		}

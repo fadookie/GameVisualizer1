@@ -137,6 +137,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 			if (TempoManagerAuxState.TAP_CAPTURE == _auxState) {
 				//Transitioning from capture to lock, auto-sync BPM
 				syncBPM();
+				_autoBeat = true;
 			}
 			AuxState = TempoManagerAuxState.LOCKED;
 			
@@ -144,6 +145,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 			if (TempoManagerAuxState.TAP_CAPTURE == _auxState) {
 				//Transitioning from capture to sync, auto-sync BPM
 				syncBPM();
+				_autoBeat = true;
 			}
 			AuxState = TempoManagerAuxState.TAP_SYNC;
 			
@@ -167,6 +169,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 				//If autoBeat hasn't been activated yet, we're transitioning into fixed state so perform a sync
 				if (!_autoBeat) {
 					syncBPM();
+					_autoBeat = true;
 				} else {
 					//Check beat timer and trigger beat if neccessary
 					if (Time.time > _lastSyncTime + (beatsPerMinuteToDelay(BPM) * _beatsSinceSync)) {
@@ -186,6 +189,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 				if (Input.GetKeyDown(beatKey)) {
 					if (TempoManagerState.FIXED == _mainState) {
 						syncBPM();
+						_autoBeat = true;
 					} else if (TempoManagerState.MANUAL_TAP == _mainState) {
 						beat();
 					}
@@ -249,11 +253,10 @@ public class TempoManager : MonoSingleton<TempoManager>
 	/// <summary>
 	/// Restart BPM timer
 	/// </summary>
-	private void syncBPM() {
+	public void syncBPM() {
 		_lastSyncTime = Time.time;
 		_beatsSinceSync = 0;
 		beat(); //NB: beat is now synced immedately instead of after a 1 beat delay
-		_autoBeat = true;	
 	}
 	
 	public static float beatsPerMinuteToDelay(float beatsPerMinute) {

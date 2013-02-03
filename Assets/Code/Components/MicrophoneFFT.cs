@@ -115,7 +115,7 @@ public class MicrophoneFFT : MonoBehaviour
 				int fftInDataIndex = 0;
 				
 				//Graphing stuff
-				int graphSamplingRate = arraySize / GRAPH_VERTEX_COUNT;
+				//int graphSamplingRate = arraySize / GRAPH_VERTEX_COUNT;
 
 				
 				//Debug.Log (string.Format ("for (i = {0}; i!= {1}; i += {2} % foo)", previousAudioBufferPosition, audioBufferPosition, incrementAmount));
