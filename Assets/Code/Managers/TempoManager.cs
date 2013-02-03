@@ -64,7 +64,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 		}
 	}
 	
-	private bool autoBeat = false;
+	private bool _autoBeat = false;
 	
 	public float pendingBPM;
 	private float _bpm;
@@ -75,6 +75,8 @@ public class TempoManager : MonoSingleton<TempoManager>
 			pendingBPM = value;
 		}
 	}
+	private float _lastSyncTime = 0;
+	private uint _beatsSinceSync = 0;
 	public bool syncNow = false;
 		
 	public uint tempoEventChannel = 1u;
@@ -96,6 +98,8 @@ public class TempoManager : MonoSingleton<TempoManager>
 	public int bpmCaptureCacheSize = 10;
 	
 	public override void Init() {
+		//The setting from GameManager.Init() was being blown away, probably due to loading order issues, so make sure we've got it here
+		pendingBPM = GameManager.instance.currentPreset.BPM;
 	}
  
 	void Start() {
@@ -150,9 +154,8 @@ public class TempoManager : MonoSingleton<TempoManager>
 		//Logic for main state
 		switch (_mainState) {
 			case TempoManagerState.MANUAL_TAP:
-				if (autoBeat) {
-					CancelInvoke();
-					autoBeat = false;
+				if (_autoBeat) {
+					_autoBeat = false;
 				}
 				//Automatically enable TAP_SYNC aux mode
 				if (TempoManagerAuxState.TAP_SYNC != _auxState) {
@@ -161,8 +164,15 @@ public class TempoManager : MonoSingleton<TempoManager>
 				break;
 				
 			case TempoManagerState.FIXED:
-				if (!autoBeat) {
+				//If autoBeat hasn't been activated yet, we're transitioning into fixed state so perform a sync
+				if (!_autoBeat) {
 					syncBPM();
+				} else {
+					//Check beat timer and trigger beat if neccessary
+					if (Time.time > _lastSyncTime + (beatsPerMinuteToDelay(BPM) * _beatsSinceSync)) {
+						//Debug.Log(string.Format("BEAT - lastSyncTime={0} BPM={5} bpmToDelay={1} beatsSinceSync={2} nextBeatTime={3} > time={4}", _lastSyncTime, beatsPerMinuteToDelay(BPM), _beatsSinceSync, _lastSyncTime + (beatsPerMinuteToDelay(BPM) * _beatsSinceSync), Time.time, BPM)); 
+						beat();
+					}
 				}
 				break;
 		}
@@ -171,6 +181,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 		//Logic for aux state (input processing mode)
 		switch (_auxState) {
 			//TempoManagerAuxState.LOCKED has no behavior by definition
+			
 			case TempoManagerAuxState.TAP_SYNC:
 				if (Input.GetKeyDown(beatKey)) {
 					if (TempoManagerState.FIXED == _mainState) {
@@ -239,9 +250,10 @@ public class TempoManager : MonoSingleton<TempoManager>
 	/// Restart BPM timer
 	/// </summary>
 	private void syncBPM() {
-		CancelInvoke();
-		InvokeRepeating("beat", 0, beatsPerMinuteToDelay(BPM));
-		autoBeat = true;	
+		_lastSyncTime = Time.time;
+		_beatsSinceSync = 0;
+		beat(); //NB: beat is now synced immedately instead of after a 1 beat delay
+		_autoBeat = true;	
 	}
 	
 	public static float beatsPerMinuteToDelay(float beatsPerMinute) {
@@ -254,6 +266,7 @@ public class TempoManager : MonoSingleton<TempoManager>
 	}
 	
 	private void beat() {
+		_beatsSinceSync++;
 		ReactiveManager.Instance.beatEvent(tempoEventChannel, BPM);
 	}
 	

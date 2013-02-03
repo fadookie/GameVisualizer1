@@ -20,6 +20,9 @@ public class GameManager : MonoSingleton<GameManager>
 {
 	public GameState gameState = GameState.TitleCard;
 	public int _currentPreset = 0;
+	public SongPreset currentPreset {
+		get { return songPresets[_currentPreset]; }
+	}
 	public SongPreset[] songPresets;
 	public string skipBackKey = "[";
 	public string skipForwardKey = "]";
