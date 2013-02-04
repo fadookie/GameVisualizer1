@@ -12,25 +12,31 @@ public class MovieController : Reactive {
 	public bool toggleVisibility = false;
 	public bool togglePlayback = false;
 	public bool cycleMaterial = false;
+	public bool cycleClip = false;
 	public int visibilityFrequency = 1;
 	public int playbackFrequency = 1;
 	public int materialFrequency = 1;
+	public int clipFrequency = 1;
 	private int _visibilityCounter = 0;
 	private int _playbackCounter = 0;
 	private int _materialCounter = 0;
+	private int _clipCounter = 0;
 	
 	public bool disabled = false;
+	public bool visible = true; //Should we render? Set externally and by ToggleVisibility(). This ovverrides null material handling in CycleMaterial()
 	public bool retrigger = false;
 	public bool pauseWhenDisablingMovie = false;
 	public FilterMode filterMode = FilterMode.Point;
-	public float duration;
-	public List<Material> materials = new List<Material>();
-	public List<Material> titleCards = new List<Material>();
 
-	HashSet<MovieTexture> _movies = new HashSet<MovieTexture>();
+	public List<MovieTexture> clips = new List<MovieTexture>();
 	MovieTexture _currentMovie;
-	public bool visible = true; //Should we render? Set externally and by ToggleVisibility(). This ovverrides null material handling in CycleMaterial()
 	uint _currentMaterialIndex = 0;
+	uint _currentClipIndex = 0;
+	
+	public List<Material> materials = new List<Material>();
+	
+	public List<MovieTexture> titleCards = new List<MovieTexture>();
+	public Material titleCardMaterial = null;
 	
 	public string toggleMovieKey = "m";
 	public string toggleVisibilityKey = "v";
@@ -38,6 +44,8 @@ public class MovieController : Reactive {
 	public string toggleCycleMaterialKey = "c";
 	public string previousClipKey = ",";
 	public string nextClipKey = ".";
+	public string previousMaterialKey = ";";
+	public string nextMaterialKey = "'";
 	
 	// Use this for initialization
 	void Start () {
@@ -46,28 +54,30 @@ public class MovieController : Reactive {
 			throw new System.Exception("At least one material must be assigned!");
 		}
 		
+		/*
 		Action<ICollection> processMovies = delegate(ICollection collection) {
 			foreach (Material mat in collection) {
 				if (null != mat && !(mat.mainTexture is MovieTexture)) {
-					throw new System.Exception("All materials must have MovieTextures");
+					//throw new System.Exception("All materials must have MovieTextures");
+					continue;
 				}
-				_movies.Add((MovieTexture)mat.mainTexture);
 			}
 		};
 		processMovies(materials);
 		processMovies(titleCards);
+		*/
+		
+		if (null == titleCardMaterial) throw new System.NullReferenceException("Title card material cannot be null.");
+		if (clips.Count < 1) throw new Exception("At least one MovieTexture must be assigned.");
 		
 		//Cue up frames
 		playAll();
 		
-		//Apply material 0
-		renderer.sharedMaterial = materials[0];
-		if (!(renderer.material.mainTexture is MovieTexture)) {
-			throw new System.Exception("Texture must be a MovieTexture");
-		}
+		//Apply title card material as fallback
+		renderer.sharedMaterial = titleCardMaterial;
 		
-		_currentMovie = renderer.material.mainTexture as MovieTexture;
-		duration = _currentMovie.duration;
+		//Use movie 0 as fallback
+		_currentMovie = clips[0];
 		
 		ReactiveManager.Instance.registerListener(this, getChannels());
 	}
@@ -98,8 +108,13 @@ public class MovieController : Reactive {
 			cycleMaterial = !cycleMaterial;
 		}
 		if (Input.GetKeyDown(nextClipKey)) {
-			CycleMaterialForward();
+			CycleClipByAmount(1);
 		} else if (Input.GetKeyDown(previousClipKey)) {
+			CycleClipByAmount(-1);
+		}
+		if (Input.GetKeyDown(nextMaterialKey)) {
+			CycleMaterialForward();
+		} else if (Input.GetKeyDown(previousMaterialKey)) {
 			CycleMaterialBackward();
 		}
 		
@@ -120,14 +135,14 @@ public class MovieController : Reactive {
 	#region Playback control
 	
 	public void pauseAll() {
-		foreach (MovieTexture movie in _movies) {
+		foreach (MovieTexture movie in clips) {
 			movie.Pause();
 		}
 		play = false;
 	}
 	
 	public void stopAll() {
-		foreach (MovieTexture movie in _movies) {
+		foreach (MovieTexture movie in clips) {
 			movie.Stop();
 		}
 		play = false;
@@ -137,7 +152,7 @@ public class MovieController : Reactive {
 	/// You should probably never call this, just putting it in here for debugging
 	/// </summary>
 	public void playAll() {
-		foreach (MovieTexture movie in _movies) {
+		foreach (MovieTexture movie in clips) {
 			movie.Play();
 		}
 		play = true;
@@ -149,17 +164,18 @@ public class MovieController : Reactive {
 	
 	public void showTitleCard(string titleCardName) {
 		stopAll();
-		Material mat = null;
-		foreach (Material m in titleCards) {
+		MovieTexture titleMovie = null;
+		foreach (MovieTexture m in titleCards) {
 			if (m.name.Equals(titleCardName)) {
-				mat = m;
+				titleMovie = m;
 				break;
 			}
 		}
-		if (null != mat) {
+		if (null != titleMovie) {
 			renderer.enabled = true;
-			renderer.sharedMaterial = mat;
-			_currentMovie = (MovieTexture)mat.mainTexture;
+			renderer.sharedMaterial = titleCardMaterial;
+			titleCardMaterial.mainTexture = titleMovie;
+			_currentMovie = titleMovie;
 			_currentMovie.Play();
 			play = true;
 			visible = true;
@@ -174,8 +190,10 @@ public class MovieController : Reactive {
 		play = playNow;
 		visible = playNow;
 		renderer.enabled = visible;
-		renderer.sharedMaterial = materials[(int)(_currentMaterialIndex % materials.Count)];
-		_currentMovie = (MovieTexture)renderer.sharedMaterial.mainTexture;
+		_currentMovie = clips[(int)(_currentClipIndex) % clips.Count];
+		Material currentMaterial = materials[(int)(_currentMaterialIndex % materials.Count)];
+		currentMaterial.mainTexture = _currentMovie;
+		renderer.sharedMaterial = currentMaterial;
 		if (!pauseWhenDisablingMovie) _currentMovie.Play();
 	}
 	
@@ -227,6 +245,16 @@ public class MovieController : Reactive {
 		}
 	}
 	
+	void CycleClipByAmount(int amount) {
+		MovieTexture oldMovie 	= clips[(int)(_currentClipIndex % clips.Count)];
+		_currentClipIndex = (uint)((int)_currentClipIndex + amount);
+		MovieTexture newMovie 	= clips[(int)(_currentClipIndex % clips.Count)];
+		oldMovie.Pause();
+		renderer.material.mainTexture = newMovie;
+		newMovie.Play();
+		_currentMovie = newMovie;
+	}
+	
 	void CycleMaterialForward() {
 		Material oldMat   = materials[(int)(_currentMaterialIndex % materials.Count)];
 		Material nextMat  = materials[(int)(++_currentMaterialIndex % materials.Count)];
@@ -243,7 +271,8 @@ public class MovieController : Reactive {
 		if (null == nextMat) {
 			renderer.enabled = false; //No material is set in this slot, so just don't render
 		} else {
-			_currentMovie = (MovieTexture)nextMat.mainTexture;
+			//_currentMovie = (MovieTexture)nextMat.mainTexture;
+			nextMat.mainTexture = _currentMovie;
 			if (null == oldMat && visible) {
 				renderer.enabled = true;
 			}

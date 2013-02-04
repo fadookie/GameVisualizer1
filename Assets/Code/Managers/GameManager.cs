@@ -86,7 +86,15 @@ public class GameManager : MonoSingleton<GameManager>
 			//Push state to TempoManager
 			TempoManager.instance.pendingBPM = currentPreset.BPM;
 			
-			if (currentPreset.autoShowTitleCard) gameState = GameState.TitleCard;
+			if (currentPreset.autoShowTitleCard) {
+				gameState = GameState.TitleCard;
+				_gameState = gameState;
+			} else {
+				//Default state if no auto-title is visualizer
+				gameState = GameState.Visualizer;
+				_gameState = gameState;
+			}
+			Debug.Log("presetChanged: " + _gameState);
 		}
 		
 		//Process gameState change - if only the preset changed we also need to push updates here
@@ -97,7 +105,7 @@ public class GameManager : MonoSingleton<GameManager>
 				case GameState.TitleCard:
 					movieController.showTitleCard(currentPreset.titleCardName);
 					if (null != _roadControllerObject) _roadControllerObject.SetActive(false);
-					Debug.Log("TITLECARD ON");
+					//Debug.Log("TITLECARD ON");
 					break;
 				case GameState.Visualizer:
 					movieController.toggleVisibility = currentPreset.toggleVisibility;
@@ -108,7 +116,7 @@ public class GameManager : MonoSingleton<GameManager>
 					movieController.materialFrequency = currentPreset.materialFrequency;
 					movieController.visualizerMode(currentPreset.playMovieOnStart);
 					if (null != _roadControllerObject) _roadControllerObject.SetActive(true);
-					Debug.Log("VISUALIZER ON");
+					//Debug.Log("VISUALIZER ON");
 					//Automatic tempo sync
 					TempoManager.instance.syncBPM();
 					break;
