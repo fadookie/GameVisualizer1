@@ -9,8 +9,9 @@ public class SongPreset {
 	public string songName;
 	public string notes;
 	public string titleCardName;
-	public bool playMovieOnStart;
 	public int BPM;
+	public bool playMovieOnStart;
+	public bool autoShowTitleCard = true;
 	
 	public override string ToString() {
 		return string.Format("SongPreset{{name:{0}, notes:{1}, titleCardName:{2}, BPM:{3}}}", songName, notes, titleCardName, BPM);
@@ -30,7 +31,6 @@ public class GameManager : MonoSingleton<GameManager>
 	public string skipForwardKey = "]";
 	public string toggleTitleKey = "t";
 	private bool _initialUpdate = true;
-	private bool _autoShowTitleCard = true;
 	
 	GameObject _roadControllerObject = null;
 	
@@ -59,11 +59,9 @@ public class GameManager : MonoSingleton<GameManager>
 		if (Input.GetKeyDown(skipBackKey)) {
 			_currentPreset = MathHelper.Mod(_currentPreset - 1, songPresets.Length);
 			presetChanged = true;
-			if (_autoShowTitleCard) gameState = GameState.TitleCard;
 		} else if (Input.GetKeyDown(skipForwardKey)) {
 			_currentPreset = MathHelper.Mod(_currentPreset + 1, songPresets.Length);
 			presetChanged = true;
-			if (_autoShowTitleCard) gameState = GameState.TitleCard;
 		}
 		if (Input.GetKeyDown(toggleTitleKey)) {
 			gameState = (gameState == GameState.TitleCard) ? GameState.Visualizer : GameState.TitleCard;
@@ -81,6 +79,8 @@ public class GameManager : MonoSingleton<GameManager>
 			logPreset();
 			//Push state to TempoManager
 			TempoManager.instance.pendingBPM = currentPreset.BPM;
+			
+			if (currentPreset.autoShowTitleCard) gameState = GameState.TitleCard;
 		}
 		
 		//Process gameState change - if only the preset changed we also need to push updates here
