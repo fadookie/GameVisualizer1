@@ -48,6 +48,9 @@ public class MovieController : Reactive {
 		processMovies(materials);
 		processMovies(titleCards);
 		
+		//Cue up frames
+		playAll();
+		
 		//Apply material 0
 		renderer.sharedMaterial = materials[0];
 		if (!(renderer.material.mainTexture is MovieTexture)) {
@@ -90,6 +93,16 @@ public class MovieController : Reactive {
 			movie.Stop();
 		}
 		play = false;
+	}
+	
+	/// <summary>
+	/// You should probably never call this, just putting it in here for debugging
+	/// </summary>
+	public void playAll() {
+		foreach (MovieTexture movie in _movies) {
+			movie.Play();
+		}
+		play = true;
 	}
 	
 	#endregion
