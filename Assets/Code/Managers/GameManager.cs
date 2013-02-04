@@ -10,8 +10,14 @@ public class SongPreset {
 	public string notes;
 	public string titleCardName;
 	public int BPM;
-	public bool playMovieOnStart;
 	public bool autoShowTitleCard = true;
+	public bool playMovieOnStart;
+	public bool toggleVisibility;
+	public bool togglePlayback;
+	public bool cycleMaterial;
+	public int visibilityFrequency = 1;
+	public int playbackFrequency = 1;
+	public int materialFrequency = 1;
 	
 	public override string ToString() {
 		return string.Format("SongPreset{{name:{0}, notes:{1}, titleCardName:{2}, BPM:{3}}}", songName, notes, titleCardName, BPM);
@@ -94,6 +100,12 @@ public class GameManager : MonoSingleton<GameManager>
 					Debug.Log("TITLECARD ON");
 					break;
 				case GameState.Visualizer:
+					movieController.toggleVisibility = currentPreset.toggleVisibility;
+					movieController.togglePlayback = currentPreset.togglePlayback;
+					movieController.cycleMaterial = currentPreset.cycleMaterial;
+					movieController.visibilityFrequency = currentPreset.visibilityFrequency;
+					movieController.playbackFrequency = currentPreset.playbackFrequency;
+					movieController.materialFrequency = currentPreset.materialFrequency;
 					movieController.visualizerMode(currentPreset.playMovieOnStart);
 					if (null != _roadControllerObject) _roadControllerObject.SetActive(true);
 					Debug.Log("VISUALIZER ON");

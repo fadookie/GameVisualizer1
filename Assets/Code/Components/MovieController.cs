@@ -19,7 +19,9 @@ public class MovieController : Reactive {
 	private int _playbackCounter = 0;
 	private int _materialCounter = 0;
 	
+	public bool disabled = false;
 	public bool retrigger = false;
+	public bool pauseWhenDisablingMovie = false;
 	public FilterMode filterMode = FilterMode.Point;
 	public float duration;
 	public List<Material> materials = new List<Material>();
@@ -29,6 +31,13 @@ public class MovieController : Reactive {
 	MovieTexture _currentMovie;
 	public bool visible = true; //Should we render? Set externally and by ToggleVisibility(). This ovverrides null material handling in CycleMaterial()
 	uint _currentMaterialIndex = 0;
+	
+	public string toggleMovieKey = "m";
+	public string toggleVisibilityKey = "v";
+	public string togglePlaybackKey = "p";
+	public string toggleCycleMaterialKey = "c";
+	public string previousClipKey = ",";
+	public string nextClipKey = ".";
 	
 	// Use this for initialization
 	void Start () {
@@ -65,6 +74,35 @@ public class MovieController : Reactive {
 	
 	// Update is called once per frame
 	void Update () {
+		//Process input
+		if (Input.GetKeyDown(toggleMovieKey)) {
+			if (disabled) {
+				disabled = false;
+				renderer.enabled = true;
+				play = true;
+				visible = true;
+			} else {
+				disabled = true;
+				renderer.enabled = false;
+				if (pauseWhenDisablingMovie) play = false;
+				visible = false;
+			}
+		}
+		if (Input.GetKeyDown(toggleVisibilityKey)) {
+			toggleVisibility = !toggleVisibility;
+		}
+		if (Input.GetKeyDown(togglePlaybackKey)) {
+			togglePlayback = !togglePlayback;
+		}
+		if (Input.GetKeyDown(toggleCycleMaterialKey)) {
+			cycleMaterial = !cycleMaterial;
+		}
+		if (Input.GetKeyDown(nextClipKey)) {
+			CycleMaterialForward();
+		} else if (Input.GetKeyDown(previousClipKey)) {
+			CycleMaterialBackward();
+		}
+		
 		renderer.enabled = visible;
 		if (loop != _currentMovie.loop) {
 			_currentMovie.loop = loop;
@@ -132,11 +170,13 @@ public class MovieController : Reactive {
 	
 	public void visualizerMode(bool playNow) {
 		stopAll();
+		disabled = !playNow;
 		play = playNow;
+		visible = playNow;
 		renderer.enabled = visible;
 		renderer.sharedMaterial = materials[(int)(_currentMaterialIndex % materials.Count)];
 		_currentMovie = (MovieTexture)renderer.sharedMaterial.mainTexture;
-		if (play) _currentMovie.Play();
+		if (!pauseWhenDisablingMovie) _currentMovie.Play();
 	}
 	
 	#endregion
@@ -147,14 +187,14 @@ public class MovieController : Reactive {
 	}
 	
 	public override void reactToBeat(float currentBPM) {
-		if (GameManager.GameState.Visualizer == GameManager.instance.gameState) {
+		if (!disabled && GameManager.GameState.Visualizer == GameManager.instance.gameState) {
 			if (toggleVisibility && (++_visibilityCounter >= visibilityFrequency)) {
 					_visibilityCounter = 0;
 					ToggleVisibility();
 			}
 			if (cycleMaterial && (++_materialCounter >= materialFrequency)) {
 					_materialCounter = 0;
-					CycleMaterial();
+					CycleMaterialForward();
 			}
 			if (togglePlayback && (++_playbackCounter >= playbackFrequency)) {
 					_playbackCounter = 0;
@@ -187,9 +227,19 @@ public class MovieController : Reactive {
 		}
 	}
 	
-	void CycleMaterial() {
+	void CycleMaterialForward() {
 		Material oldMat   = materials[(int)(_currentMaterialIndex % materials.Count)];
 		Material nextMat  = materials[(int)(++_currentMaterialIndex % materials.Count)];
+		CycleMaterial(oldMat, nextMat);
+	}
+	
+	void CycleMaterialBackward() {
+		Material oldMat   = materials[(int)(_currentMaterialIndex % materials.Count)];
+		Material nextMat  = materials[(int)(--_currentMaterialIndex % materials.Count)];
+		CycleMaterial(oldMat, nextMat);
+	}
+	
+	void CycleMaterial(Material oldMat, Material nextMat) {
 		if (null == nextMat) {
 			renderer.enabled = false; //No material is set in this slot, so just don't render
 		} else {
