@@ -141,18 +141,6 @@
         </struct>
         <key>fileList</key>
         <array>
-            <filename>OutRun/ferrari_straight1.png</filename>
-            <filename>OutRun/ferrari_straight2.png</filename>
-            <filename>OutRun/ferrari_uphill_left1.png</filename>
-            <filename>OutRun/ferrari_uphill_left2.png</filename>
-            <filename>OutRun/ferrari_uphill_right1.png</filename>
-            <filename>OutRun/ferrari_uphill_right2.png</filename>
-            <filename>OutRun/ferrari_uphill_straight1.png</filename>
-            <filename>OutRun/ferrari_uphill_straight2.png</filename>
-            <filename>OutRun/ferrari_left1.png</filename>
-            <filename>OutRun/ferrari_left2.png</filename>
-            <filename>OutRun/ferrari_right1.png</filename>
-            <filename>OutRun/ferrari_right2.png</filename>
             <filename>OutRun/billboard01.png</filename>
             <filename>OutRun/billboard02.png</filename>
             <filename>OutRun/billboard03.png</filename>
