@@ -94,7 +94,7 @@ public class GameManager : MonoSingleton<GameManager>
 				gameState = GameState.Visualizer;
 				_gameState = gameState;
 			}
-			Debug.Log("presetChanged: " + _gameState);
+			//Debug.Log("presetChanged: " + _gameState);
 		}
 		
 		//Process gameState change - if only the preset changed we also need to push updates here

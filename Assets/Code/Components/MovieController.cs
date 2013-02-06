@@ -42,6 +42,8 @@ public class MovieController : Reactive {
 	public string toggleVisibilityKey = "v";
 	public string togglePlaybackKey = "p";
 	public string toggleCycleMaterialKey = "c";
+	public string bumpModifierKeyA = "left shift";
+	public string bumpModifierKeyB = "right shift";
 	public string previousClipKey = ",";
 	public string nextClipKey = ".";
 	public string previousMaterialKey = ";";
@@ -85,6 +87,13 @@ public class MovieController : Reactive {
 	// Update is called once per frame
 	void Update () {
 		//Process input
+		
+		//Cache Key events that are checked more than once
+		bool bumpModifierKeyDown = Input.GetKey(bumpModifierKeyA) || Input.GetKey(bumpModifierKeyB);
+		bool toggleVisibilityKeyDown = Input.GetKeyDown(toggleVisibilityKey);
+		bool togglePlaybackKeyDown = Input.GetKeyDown(togglePlaybackKey);
+		bool toggleCycleMaterialKeyDown = Input.GetKeyDown(toggleCycleMaterialKey);
+		
 		if (Input.GetKeyDown(toggleMovieKey)) {
 			if (disabled) {
 				disabled = false;
@@ -98,26 +107,37 @@ public class MovieController : Reactive {
 				visible = false;
 			}
 		}
-		if (Input.GetKeyDown(toggleVisibilityKey)) {
+		
+		if (toggleVisibilityKeyDown && !bumpModifierKeyDown) {
 			toggleVisibility = !toggleVisibility;
+		} else if (toggleVisibilityKeyDown && bumpModifierKeyDown) {
+			ToggleVisibility();
 		}
-		if (Input.GetKeyDown(togglePlaybackKey)) {
+		
+		if (togglePlaybackKeyDown && !bumpModifierKeyDown) {
 			togglePlayback = !togglePlayback;
+		} else if (togglePlaybackKeyDown && bumpModifierKeyDown) {
+			TogglePlayback();
 		}
-		if (Input.GetKeyDown(toggleCycleMaterialKey)) {
+		
+		if (toggleCycleMaterialKeyDown) {
+			//Right now there's no need to overload this key since materials have their own controls
 			cycleMaterial = !cycleMaterial;
 		}
+		
 		if (Input.GetKeyDown(nextClipKey)) {
 			CycleClipByAmount(1);
 		} else if (Input.GetKeyDown(previousClipKey)) {
 			CycleClipByAmount(-1);
 		}
+		
 		if (Input.GetKeyDown(nextMaterialKey)) {
 			CycleMaterialForward();
 		} else if (Input.GetKeyDown(previousMaterialKey)) {
 			CycleMaterialBackward();
 		}
 		
+		//Process other settings
 		renderer.enabled = visible;
 		if (loop != _currentMovie.loop) {
 			_currentMovie.loop = loop;
@@ -160,66 +180,7 @@ public class MovieController : Reactive {
 	
 	#endregion
 	
-	#region State control (called by GameManager)
-	
-	public void showTitleCard(string titleCardName) {
-		stopAll();
-		MovieTexture titleMovie = null;
-		foreach (MovieTexture m in titleCards) {
-			if (m.name.Equals(titleCardName)) {
-				titleMovie = m;
-				break;
-			}
-		}
-		if (null != titleMovie) {
-			renderer.enabled = true;
-			renderer.sharedMaterial = titleCardMaterial;
-			titleCardMaterial.mainTexture = titleMovie;
-			_currentMovie = titleMovie;
-			_currentMovie.Play();
-			play = true;
-			visible = true;
-		} else {
-			Debug.Log(string.Format("Title card \"{0}\" not found.", titleCardName));
-		}
-	}
-	
-	public void visualizerMode(bool playNow) {
-		stopAll();
-		disabled = !playNow;
-		play = playNow;
-		visible = playNow;
-		renderer.enabled = visible;
-		_currentMovie = clips[(int)(_currentClipIndex) % clips.Count];
-		Material currentMaterial = materials[(int)(_currentMaterialIndex % materials.Count)];
-		currentMaterial.mainTexture = _currentMovie;
-		renderer.sharedMaterial = currentMaterial;
-		if (!pauseWhenDisablingMovie) _currentMovie.Play();
-	}
-	
-	#endregion
-	
-	#region Reactive event handlers
-	
-	public override void reactToAmplitude(uint channel, float amp, bool overThreshold) {
-	}
-	
-	public override void reactToBeat(float currentBPM) {
-		if (!disabled && GameManager.GameState.Visualizer == GameManager.instance.gameState) {
-			if (toggleVisibility && (++_visibilityCounter >= visibilityFrequency)) {
-					_visibilityCounter = 0;
-					ToggleVisibility();
-			}
-			if (cycleMaterial && (++_materialCounter >= materialFrequency)) {
-					_materialCounter = 0;
-					CycleMaterialForward();
-			}
-			if (togglePlayback && (++_playbackCounter >= playbackFrequency)) {
-					_playbackCounter = 0;
-					TogglePlayback();
-			}
-		}
-	}
+	#region Internal state management
 	
 	void ToggleVisibility() {
 		if (visible) {
@@ -280,6 +241,71 @@ public class MovieController : Reactive {
 		renderer.sharedMaterial = nextMat;
 		//Debug.Log(string.Format("renderer.sharedMaterial = {0} <- {1} (materials[{2}] / {3})", renderer.sharedMaterial, materials[_currentMaterialIndex % materials.Count], _currentMaterialIndex % materials.Count, materials.Count));
 	}
+	
+	#endregion
+	
+	#region External state control (called by GameManager)
+	
+	public void showTitleCard(string titleCardName) {
+		stopAll();
+		MovieTexture titleMovie = null;
+		foreach (MovieTexture m in titleCards) {
+			if (m.name.Equals(titleCardName)) {
+				titleMovie = m;
+				break;
+			}
+		}
+		if (null != titleMovie) {
+			renderer.enabled = true;
+			renderer.sharedMaterial = titleCardMaterial;
+			titleCardMaterial.mainTexture = titleMovie;
+			_currentMovie = titleMovie;
+			_currentMovie.Play();
+			play = true;
+			visible = true;
+		} else {
+			Debug.Log(string.Format("Title card \"{0}\" not found.", titleCardName));
+		}
+	}
+	
+	public void visualizerMode(bool playNow) {
+		stopAll();
+		disabled = !playNow;
+		play = playNow;
+		visible = playNow;
+		renderer.enabled = visible;
+		_currentMovie = clips[(int)(_currentClipIndex) % clips.Count];
+		Material currentMaterial = materials[(int)(_currentMaterialIndex % materials.Count)];
+		currentMaterial.mainTexture = _currentMovie;
+		renderer.sharedMaterial = currentMaterial;
+		if (!pauseWhenDisablingMovie) _currentMovie.Play();
+	}
+	
+	#endregion
+	
+	#region Reactive event handlers
+	
+	public override void reactToAmplitude(uint channel, float amp, bool overThreshold) {
+	}
+	
+	public override void reactToBeat(float currentBPM) {
+		if (!disabled && GameManager.GameState.Visualizer == GameManager.instance.gameState) {
+			if (toggleVisibility && (++_visibilityCounter >= visibilityFrequency)) {
+					_visibilityCounter = 0;
+					ToggleVisibility();
+			}
+			if (cycleMaterial && (++_materialCounter >= materialFrequency)) {
+					_materialCounter = 0;
+					CycleMaterialForward();
+			}
+			if (togglePlayback && (++_playbackCounter >= playbackFrequency)) {
+					_playbackCounter = 0;
+					TogglePlayback();
+			}
+		}
+	}
+	
+
 	
 	#endregion	
 }
