@@ -82,6 +82,84 @@
                 <key>sourceSize</key>
                 <string>{80,49}</string>
             </dict>
+            <key>up_front_1.png</key>
+            <dict>
+                <key>frame</key>
+                <string>{{2,104},{79,49}}</string>
+                <key>offset</key>
+                <string>{0,0}</string>
+                <key>rotated</key>
+                <false/>
+                <key>sourceColorRect</key>
+                <string>{{0,0},{79,49}}</string>
+                <key>sourceSize</key>
+                <string>{79,49}</string>
+            </dict>
+            <key>up_front_2.png</key>
+            <dict>
+                <key>frame</key>
+                <string>{{83,104},{79,49}}</string>
+                <key>offset</key>
+                <string>{0,0}</string>
+                <key>rotated</key>
+                <false/>
+                <key>sourceColorRect</key>
+                <string>{{0,0},{79,49}}</string>
+                <key>sourceSize</key>
+                <string>{79,49}</string>
+            </dict>
+            <key>up_left_1.png</key>
+            <dict>
+                <key>frame</key>
+                <string>{{164,104},{82,49}}</string>
+                <key>offset</key>
+                <string>{0,0}</string>
+                <key>rotated</key>
+                <false/>
+                <key>sourceColorRect</key>
+                <string>{{0,0},{82,49}}</string>
+                <key>sourceSize</key>
+                <string>{82,49}</string>
+            </dict>
+            <key>up_left_2.png</key>
+            <dict>
+                <key>frame</key>
+                <string>{{2,155},{82,49}}</string>
+                <key>offset</key>
+                <string>{0,0}</string>
+                <key>rotated</key>
+                <false/>
+                <key>sourceColorRect</key>
+                <string>{{0,0},{82,49}}</string>
+                <key>sourceSize</key>
+                <string>{82,49}</string>
+            </dict>
+            <key>up_right_1.png</key>
+            <dict>
+                <key>frame</key>
+                <string>{{86,155},{80,49}}</string>
+                <key>offset</key>
+                <string>{0,0}</string>
+                <key>rotated</key>
+                <false/>
+                <key>sourceColorRect</key>
+                <string>{{0,0},{80,49}}</string>
+                <key>sourceSize</key>
+                <string>{80,49}</string>
+            </dict>
+            <key>up_right_2.png</key>
+            <dict>
+                <key>frame</key>
+                <string>{{168,155},{80,49}}</string>
+                <key>offset</key>
+                <string>{0,0}</string>
+                <key>rotated</key>
+                <false/>
+                <key>sourceColorRect</key>
+                <string>{{0,0},{80,49}}</string>
+                <key>sourceSize</key>
+                <string>{80,49}</string>
+            </dict>
         </dict>
         <key>metadata</key>
         <dict>
@@ -90,9 +168,9 @@
             <key>realTextureFileName</key>
             <string>OutRun.png</string>
             <key>size</key>
-            <string>{256,128}</string>
+            <string>{256,256}</string>
             <key>smartupdate</key>
-            <string>$TexturePacker:SmartUpdate:5f76a53670d0fa27d1cae4bd45a1643e$</string>
+            <string>$TexturePacker:SmartUpdate:85660b96e5f662ce3799b72bbf37c520$</string>
             <key>textureFileName</key>
             <string>OutRun.png</string>
         </dict>

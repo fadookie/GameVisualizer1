@@ -147,6 +147,12 @@
             <filename>SlimeGirls/right_2.png</filename>
             <filename>SlimeGirls/left_2.png</filename>
             <filename>SlimeGirls/left_1.png</filename>
+            <filename>SlimeGirls/up_front_1.png</filename>
+            <filename>SlimeGirls/up_front_2.png</filename>
+            <filename>SlimeGirls/up_left_1.png</filename>
+            <filename>SlimeGirls/up_left_2.png</filename>
+            <filename>SlimeGirls/up_right_1.png</filename>
+            <filename>SlimeGirls/up_right_2.png</filename>
         </array>
         <key>ignoreFileList</key>
         <array/>
