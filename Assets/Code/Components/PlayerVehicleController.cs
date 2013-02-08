@@ -40,13 +40,15 @@ public class PlayerVehicleController : Reactive {
 			//Debug.Log("orient THIS");
 			orientationChanged = true;
 			switch(_orientation) {
-			/*
+				case VehicleOrientation.UPHILL_LEFT:
 				case VehicleOrientation.LEFT:
 					_sprite.animationFrameset = "left";
 					break;
+				case VehicleOrientation.UPHILL_RIGHT:
 				case VehicleOrientation.RIGHT:
 					_sprite.animationFrameset = "right";
 					break;
+					/*
 				case VehicleOrientation.UPHILL_LEFT:
 					_sprite.animationFrameset = "uphill_left";
 					break;
