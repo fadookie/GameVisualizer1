@@ -353,7 +353,11 @@ public class RoadController : Reactive {
 	}
 
     void addCurve(RoadLength length, float curve) {
-      addRoad((int)length, (int)length, (int)length, curve, 0f);
+    	addCurve(length, curve, 0f);
+    }
+    
+    void addCurve(RoadLength length, float curve, float height) {
+      addRoad((int)length, (int)length, (int)length, curve, height);
     }
         
     void addSCurves() {
@@ -387,21 +391,24 @@ public class RoadController : Reactive {
 		*/
 		
 		addStraight((int)RoadLength.SHORT/4);
+		addCurve(RoadLength.LONG, (float)RoadCurve.MEDIUM, (float)RoadHill.HIGH);
 		addHill((int)RoadLength.SHORT, (float)RoadHill.LOW);
 		addRollingHills((int)RoadLength.SHORT, (float)RoadHill.LOW);
 		addSCurves();
-		/*
-		addStraight(RoadLength.LONG);
+		addHill((int)RoadLength.LONG, -(float)RoadHill.HIGH);
 		addCurve(RoadLength.MEDIUM, (float)RoadCurve.MEDIUM);
+		addCurve(RoadLength.LONG, (float)RoadCurve.MEDIUM, (float)RoadHill.MEDIUM);
+		addStraight(RoadLength.MEDIUM);
+		addRollingHills((int)RoadLength.LONG, (float)RoadHill.HIGH);
+		addSCurves();
+		addCurve(RoadLength.LONG, -(float)RoadCurve.MEDIUM, (float)RoadHill.LOW);
 		addCurve(RoadLength.LONG, (float)RoadCurve.MEDIUM);
 		addStraight(RoadLength.MEDIUM);
 		addSCurves();
-		addCurve(RoadLength.LONG, -(float)RoadCurve.MEDIUM);
-		addCurve(RoadLength.LONG, (float)RoadCurve.MEDIUM);
-		addStraight(RoadLength.MEDIUM);
-		addSCurves();
-		addCurve(RoadLength.LONG, -(float)RoadCurve.EASY);
-		*/
+		addRollingHills((int)RoadLength.MEDIUM, (float)RoadHill.HIGH);
+		addCurve(RoadLength.LONG, -(float)RoadCurve.EASY, -(float)RoadHill.HIGH);
+		addHill((int)RoadLength.LONG, -(float)RoadHill.HIGH);
+		addHill((int)RoadLength.LONG, -(float)RoadHill.HIGH);
 		
 		//Impose hills
 		/*
