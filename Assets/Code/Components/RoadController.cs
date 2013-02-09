@@ -16,6 +16,7 @@ public class RoadController : Reactive {
 	//private List<Sprite> _sprites = new List<Sprite>();
 	public static readonly int NUM_SUBMESH_TYPES = System.Enum.GetNames(typeof(SubmeshType)).Length;
 	private List<Polygon>[] _polyRenderQueue = new List<Polygon>[NUM_SUBMESH_TYPES]; 
+	public bool autoDrive = false;
 	public float roadHalfWidth = 200; // half the roads width, easier math if the road spans from -roadWidth to +roadWidth
 	public float segmentLength = 200; // length of a single segment
 	public float rumbleLength = 3;  // number of segments per red/white rumble strip
@@ -125,7 +126,7 @@ public class RoadController : Reactive {
 		//Apply "centrifugal" force for cornering
 		playerXOffset -= (dx * speedPercent * playerSegment.curve * centrifugal);
 		
-		if (Input.GetKey(KeyCode.UpArrow)) {
+		if (autoDrive || Input.GetKey(KeyCode.UpArrow)) {
 			speed += accel * Time.deltaTime;
 		} else if (Input.GetKey(KeyCode.DownArrow)) {
 			speed += breaking * Time.deltaTime;
