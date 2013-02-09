@@ -137,28 +137,28 @@
             <key>up_right_1.png</key>
             <dict>
                 <key>frame</key>
-                <string>{{86,155},{80,49}}</string>
+                <string>{{86,155},{80,48}}</string>
                 <key>offset</key>
                 <string>{0,0}</string>
                 <key>rotated</key>
                 <false/>
                 <key>sourceColorRect</key>
-                <string>{{0,0},{80,49}}</string>
+                <string>{{0,0},{80,48}}</string>
                 <key>sourceSize</key>
-                <string>{80,49}</string>
+                <string>{80,48}</string>
             </dict>
             <key>up_right_2.png</key>
             <dict>
                 <key>frame</key>
-                <string>{{168,155},{80,49}}</string>
+                <string>{{168,155},{80,48}}</string>
                 <key>offset</key>
                 <string>{0,0}</string>
                 <key>rotated</key>
                 <false/>
                 <key>sourceColorRect</key>
-                <string>{{0,0},{80,49}}</string>
+                <string>{{0,0},{80,48}}</string>
                 <key>sourceSize</key>
-                <string>{80,49}</string>
+                <string>{80,48}</string>
             </dict>
         </dict>
         <key>metadata</key>
@@ -170,7 +170,7 @@
             <key>size</key>
             <string>{256,256}</string>
             <key>smartupdate</key>
-            <string>$TexturePacker:SmartUpdate:85660b96e5f662ce3799b72bbf37c520$</string>
+            <string>$TexturePacker:SmartUpdate:084fdbe8f7e533400337392ee7907a01$</string>
             <key>textureFileName</key>
             <string>OutRun.png</string>
         </dict>
