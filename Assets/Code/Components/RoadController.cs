@@ -139,6 +139,7 @@ public class RoadController : Reactive {
 		
 		playerXOffset = Mathf.Clamp(playerXOffset, -2, 2); // dont ever let player go too far out of bounds
 		speed = Mathf.Clamp(speed, 0, maxSpeed); // or exceed maxSpeed
+		if (position > trackLength) position = 0; //loop position
 		
 		_playerVehicleController.VehicleUpdate(speed, orientation);
 		
@@ -389,6 +390,7 @@ public class RoadController : Reactive {
 		addHill((int)RoadLength.SHORT, (float)RoadHill.LOW);
 		addRollingHills((int)RoadLength.SHORT, (float)RoadHill.LOW);
 		addSCurves();
+		/*
 		addStraight(RoadLength.LONG);
 		addCurve(RoadLength.MEDIUM, (float)RoadCurve.MEDIUM);
 		addCurve(RoadLength.LONG, (float)RoadCurve.MEDIUM);
@@ -399,6 +401,7 @@ public class RoadController : Reactive {
 		addStraight(RoadLength.MEDIUM);
 		addSCurves();
 		addCurve(RoadLength.LONG, -(float)RoadCurve.EASY);
+		*/
 		
 		//Impose hills
 		/*
@@ -444,10 +447,11 @@ public class RoadController : Reactive {
 		for (int n = 0; n < drawDistance; n++, z++) {
 		
 			Segment segment = _segments[(baseSegment.index + n) % _segments.Count];
+			bool looped = segment.index < baseSegment.index;
 			
 			//Debug.Log(string.Format("BEFORE p1:{0}\np2:{1}",segment.p1, segment.p2));
-			segment.p1 = project(segment.p1, (playerXOffset * roadHalfWidth) - x, 		playerY + cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
-			segment.p2 = project(segment.p2, (playerXOffset * roadHalfWidth) - x - dx, 	playerY + cameraHeight, position, cameraDepth, width, height, roadHalfWidth);
+			segment.p1 = project(segment.p1, (playerXOffset * roadHalfWidth) - x, 		playerY + cameraHeight, position - (looped ? trackLength : 0), cameraDepth, width, height, roadHalfWidth);
+			segment.p2 = project(segment.p2, (playerXOffset * roadHalfWidth) - x - dx, 	playerY + cameraHeight, position - (looped ? trackLength : 0), cameraDepth, width, height, roadHalfWidth);
 			
 			x += dx;
 			dx += segment.curve;
