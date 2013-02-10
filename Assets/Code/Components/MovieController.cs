@@ -274,7 +274,7 @@ public class MovieController : Reactive {
 		play = playNow;
 		visible = playNow;
 		renderer.enabled = visible;
-		_currentMovie = clips[(int)(_currentClipIndex) % clips.Count];
+		_currentMovie = clips[MathHelper.Mod((int)(_currentClipIndex), clips.Count)];
 		Material currentMaterial = materials[(int)(_currentMaterialIndex % materials.Count)];
 		currentMaterial.mainTexture = _currentMovie;
 		renderer.sharedMaterial = currentMaterial;
