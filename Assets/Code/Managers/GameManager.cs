@@ -6,10 +6,15 @@ using System.Collections.Generic;
 
 [System.Serializable]
 public class SongPreset {
+	public enum GameType {
+		Car = 0,
+		SidescrollingShmup
+	}
 	public string songName;
 	public string notes;
 	public string titleCardName;
 	public int BPM;
+	public GameType gameType;
 	public bool autoShowTitleCard = true;
 	public bool playMovieOnStart;
 	public bool toggleVisibility;
@@ -115,7 +120,15 @@ public class GameManager : MonoSingleton<GameManager>
 					movieController.playbackFrequency = currentPreset.playbackFrequency;
 					movieController.materialFrequency = currentPreset.materialFrequency;
 					movieController.visualizerMode(currentPreset.playMovieOnStart);
-					if (null != _roadControllerObject) _roadControllerObject.SetActive(true);
+					switch (currentPreset.gameType) {
+						case SongPreset.GameType.Car:
+							if (null != _roadControllerObject) _roadControllerObject.SetActive(true);
+							break;
+						case SongPreset.GameType.SidescrollingShmup:
+							throw new System.NotImplementedException();
+							//if (null != _sidescrollingShmupControllerObject) _sidescrollingShmupControllerObject.SetActive(true); //FIXME
+							break;
+					}
 					//Debug.Log("VISUALIZER ON");
 					//Automatic tempo sync
 					TempoManager.instance.syncBPM();
