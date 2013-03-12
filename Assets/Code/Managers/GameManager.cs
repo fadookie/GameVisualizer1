@@ -125,7 +125,6 @@ public class GameManager : MonoSingleton<GameManager>
 							if (null != _roadControllerObject) _roadControllerObject.SetActive(true);
 							break;
 						case SongPreset.GameType.SidescrollingShmup:
-							throw new System.NotImplementedException();
 							//if (null != _sidescrollingShmupControllerObject) _sidescrollingShmupControllerObject.SetActive(true); //FIXME
 							break;
 					}
