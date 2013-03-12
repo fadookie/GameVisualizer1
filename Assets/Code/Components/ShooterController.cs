@@ -1,14 +1,20 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class ShooterController : Reactive {
-
+	
+	List<OTAnimatingSprite> enemies = new List<OTAnimatingSprite>();
+		
 	// Use this for initialization
 	void Start () {
 		ReactiveManager.Instance.registerListener(this, getChannels());
 		Debug.Log("This is your mom's shooter ;)");
-		GameObject enemySprite =  OT.CreateObject("SpaceInvader1");
-		enemySprite.transform.parent = transform;
+		GameObject enemyObject =  OT.CreateObject("SpaceInvader1");
+		enemyObject.transform.parent = transform;
+		OTAnimatingSprite enemySprite = enemyObject.GetComponent<OTAnimatingSprite>();
+		if(null == enemySprite) throw new System.Exception("Enemy object must have an OTAnimatingSprite");
+		enemies.Add(enemySprite);
 	}
 	
 	// Update is called once per frame
@@ -21,6 +27,9 @@ public class ShooterController : Reactive {
 	}
 	
 	public override void reactToBeat(float currentBPM) {
+		foreach(OTAnimatingSprite enemySprite in enemies){
+			enemySprite.position = new Vector2(enemySprite.position.x + 1, enemySprite.position.y);
+		}
 	}
 	
 	#endregion
