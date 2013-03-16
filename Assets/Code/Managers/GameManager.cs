@@ -44,6 +44,7 @@ public class GameManager : MonoSingleton<GameManager>
 	private bool _initialUpdate = true;
 	
 	GameObject _roadControllerObject = null;
+	MovieController _movieController = null;
 	
 	public enum GameState {
 		TitleCard = 0,
@@ -56,6 +57,9 @@ public class GameManager : MonoSingleton<GameManager>
 	
 	void Start() {
 		_roadControllerObject = GameObject.FindGameObjectWithTag("RoadController");
+
+		GameObject movieControllerObject = GameObject.FindGameObjectWithTag("MovieController");
+		if (movieControllerObject != null) _movieController = movieControllerObject.GetComponent<MovieController>();
 	}
 	
 	void Update() {
@@ -105,21 +109,22 @@ public class GameManager : MonoSingleton<GameManager>
 		//Process gameState change - if only the preset changed we also need to push updates here
 		if (gameStateChanged || presetChanged) {
 			//Push conditional state
-			MovieController movieController = GameObject.FindGameObjectWithTag("MovieController").GetComponent<MovieController>();
 			switch (_gameState) {
 				case GameState.TitleCard:
-					movieController.showTitleCard(currentPreset.titleCardName);
+					if (_movieController) _movieController.showTitleCard(currentPreset.titleCardName);
 					if (null != _roadControllerObject) _roadControllerObject.SetActive(false);
 					//Debug.Log("TITLECARD ON");
 					break;
 				case GameState.Visualizer:
-					movieController.toggleVisibility = currentPreset.toggleVisibility;
-					movieController.togglePlayback = currentPreset.togglePlayback;
-					movieController.cycleMaterial = currentPreset.cycleMaterial;
-					movieController.visibilityFrequency = currentPreset.visibilityFrequency;
-					movieController.playbackFrequency = currentPreset.playbackFrequency;
-					movieController.materialFrequency = currentPreset.materialFrequency;
-					movieController.visualizerMode(currentPreset.playMovieOnStart);
+					if (_movieController != null) {
+						_movieController.toggleVisibility = currentPreset.toggleVisibility;
+						_movieController.togglePlayback = currentPreset.togglePlayback;
+						_movieController.cycleMaterial = currentPreset.cycleMaterial;
+						_movieController.visibilityFrequency = currentPreset.visibilityFrequency;
+						_movieController.playbackFrequency = currentPreset.playbackFrequency;
+						_movieController.materialFrequency = currentPreset.materialFrequency;
+						_movieController.visualizerMode(currentPreset.playMovieOnStart);
+					}
 					switch (currentPreset.gameType) {
 						case SongPreset.GameType.Car:
 							if (null != _roadControllerObject) _roadControllerObject.SetActive(true);
