@@ -30,7 +30,7 @@ public class ShooterPlayerController : Reactive {
 	#region Collision handlers
 	
 	public void OnCollision(OTObject owner) {
-		Debug.Log(string.Format("Player onCollision. owner:{0} collisionObject:{1}",owner.ToString() , owner.collisionObject.ToString()));
+		Debug.Log(string.Format("Player onCollision. owner:{0} collisionObject:{1}", owner.ToString(), owner.collisionObject.ToString()));
 	}
 	
 	#endregion

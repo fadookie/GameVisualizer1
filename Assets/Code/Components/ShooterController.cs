@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class ShooterController : Reactive {
 	
-	const uint NUM_PLAYERS = 2;
+	const uint NUM_PLAYERS = 1;
 	GameObject[] players = new GameObject[NUM_PLAYERS];
 	ShooterPlayerController[] playerControllers = new ShooterPlayerController[NUM_PLAYERS];
 	List<OTAnimatingSprite> enemies = new List<OTAnimatingSprite>();
