@@ -11,6 +11,7 @@ public class ShooterPlayerController : Reactive {
 	void Start () {
 		sprite = gameObject.GetComponent<OTAnimatingSprite>();
 		if (sprite == null) throw new System.Exception("Sprite cannot be null.");
+		sprite.onCollision = OnCollision;
 		
 		ReactiveManager.Instance.registerListener(this, getChannels());
 	}
@@ -25,6 +26,14 @@ public class ShooterPlayerController : Reactive {
 		
 		sprite.position = new Vector2(sprite.position.x + horizontalAxis, sprite.position.y + verticalAxis);
 	}
+	
+	#region Collision handlers
+	
+	public void OnCollision(OTObject owner) {
+		Debug.Log(string.Format("Player onCollision: {0}", owner.collisionObject.ToString()));
+	}
+	
+	#endregion
 	
 	#region Reactive event handlers
 	
