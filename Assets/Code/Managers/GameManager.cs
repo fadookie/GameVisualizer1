@@ -25,7 +25,7 @@ public class SongPreset {
 	public int materialFrequency = 1;
 	
 	public override string ToString() {
-		return string.Format("SongPreset{{name:{0}, notes:{1}, titleCardName:{2}, BPM:{3}}}", songName, notes, titleCardName, BPM);
+		return string.Format("SongPreset{{name:{0}, notes:{1}, titleCardName:{2}, BPM:{3}, Game:{4}}}", songName, notes, titleCardName, BPM, gameType);
 	}
 }
 	
