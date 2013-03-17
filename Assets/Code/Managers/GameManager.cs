@@ -44,6 +44,7 @@ public class GameManager : MonoSingleton<GameManager>
 	private bool _initialUpdate = true;
 	
 	GameObject _roadControllerObject = null;
+	GameObject _sidescrollingShmupControllerObject = null;
 	MovieController _movieController = null;
 	
 	public enum GameState {
@@ -57,6 +58,7 @@ public class GameManager : MonoSingleton<GameManager>
 	
 	void Start() {
 		_roadControllerObject = GameObject.FindGameObjectWithTag("RoadController");
+		_sidescrollingShmupControllerObject = GameObject.FindGameObjectWithTag("ShooterController");
 
 		GameObject movieControllerObject = GameObject.FindGameObjectWithTag("MovieController");
 		if (movieControllerObject != null) _movieController = movieControllerObject.GetComponent<MovieController>();
@@ -128,9 +130,11 @@ public class GameManager : MonoSingleton<GameManager>
 					switch (currentPreset.gameType) {
 						case SongPreset.GameType.Car:
 							if (null != _roadControllerObject) _roadControllerObject.SetActive(true);
+							if (null != _sidescrollingShmupControllerObject) _sidescrollingShmupControllerObject.SetActive(false);
 							break;
 						case SongPreset.GameType.SidescrollingShmup:
-							//if (null != _sidescrollingShmupControllerObject) _sidescrollingShmupControllerObject.SetActive(true); //FIXME
+							if (null != _roadControllerObject) _roadControllerObject.SetActive(false);
+							if (null != _sidescrollingShmupControllerObject) _sidescrollingShmupControllerObject.SetActive(true);
 							break;
 					}
 					//Debug.Log("VISUALIZER ON");
