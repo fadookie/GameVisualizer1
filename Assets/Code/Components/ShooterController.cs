@@ -8,6 +8,8 @@ public class ShooterController : Reactive {
 	GameObject[] players = new GameObject[NUM_PLAYERS];
 	ShooterPlayerController[] playerControllers = new ShooterPlayerController[NUM_PLAYERS];
 	List<OTAnimatingSprite> enemies = new List<OTAnimatingSprite>();
+	List<BulletClusterController> bulletClusters = new List<BulletClusterController>(15); //15 seems like a reasonable upper bound for number of clusters on-screen at once
+
 		
 	// Use this for initialization
 	void Start () {
@@ -27,6 +29,15 @@ public class ShooterController : Reactive {
 		OTAnimatingSprite enemySprite = enemyObject.GetComponent<OTAnimatingSprite>();
 		if(null == enemySprite) throw new System.Exception("Enemy object must have an OTAnimatingSprite");
 		enemies.Add(enemySprite);
+		
+		//Spawn test cluster
+		GameObject clusterObject = new GameObject("cluster1", typeof(BulletClusterController));
+		clusterObject.transform.parent = transform;
+//		clusterObject.transform.position = Vector3.zero;
+		BulletClusterController cluster = clusterObject.GetComponent<BulletClusterController>();
+		if (cluster == null) throw new System.Exception("BulletClusterController cannot be null");
+		
+		bulletClusters.Add(cluster);
 		
 		ReactiveManager.Instance.registerListener(this, getChannels());
 	}
