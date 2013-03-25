@@ -208,7 +208,8 @@ public class MovieController : Reactive {
 	
 	void CycleClipByAmount(int amount) {
 		MovieTexture oldMovie 	= clips[(int)(_currentClipIndex % clips.Count)];
-		_currentClipIndex = (uint)((int)_currentClipIndex + amount);
+		int newClipIndex = MathHelper.Mod(((int)_currentClipIndex) + amount, clips.Count);
+		_currentClipIndex = (uint)newClipIndex;
 		MovieTexture newMovie 	= clips[(int)(_currentClipIndex % clips.Count)];
 		oldMovie.Pause();
 		renderer.material.mainTexture = newMovie;
