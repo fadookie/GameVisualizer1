@@ -17,8 +17,10 @@ public class BulletClusterController : MonoBehaviour { //TODO make a Reactive
 		}
 	}
 	
-	int numStartBullets = 50;
+	int numStartBullets = 40;
 	List<BulletInfo> bullets;
+	public float radius = 0;
+	public float radiusDelta = 0;
 	
 	void Awake() {
 		bullets = new List<BulletInfo>(numStartBullets);
@@ -26,17 +28,20 @@ public class BulletClusterController : MonoBehaviour { //TODO make a Reactive
 
 	void Start () {
 		for (int i = 0; i < numStartBullets; i++) {
-			BulletInfo bullet = new BulletInfo(OT.CreateObject("Bullet"), new Vector2(i, 0));
+			BulletInfo bullet = new BulletInfo(OT.CreateObject("Bullet"));//, new Vector2(MathHelper.Map(i, 0, numStartBullets, -1, 1), MathHelper.Map(i, 0, numStartBullets, -1, 1)));
 			bullet.sprite.transform.parent = transform;
+			bullet.sprite.transform.Rotate(0, 0, MathHelper.Map(i, 0, numStartBullets, 0, 360));
 			bullets.Add(bullet);
 		}
 	}
 	
 	void Update () {
 		//TODO everything but don't use heading as velocity	
+		radius += radiusDelta;
 
 		foreach (BulletInfo bullet in bullets) {
-			bullet.sprite.position = new Vector2(bullet.sprite.position.x + (bullet.heading.x * Time.deltaTime), bullet.sprite.position.y + (bullet.heading.y * Time.deltaTime));
+			//bullet.sprite.position = new Vector2(bullet.sprite.position.x + (bullet.heading.x * Time.deltaTime), bullet.sprite.position.y + (bullet.heading.y * Time.deltaTime));
+			bullet.sprite.transform.Translate(0, radiusDelta, 0, Space.Self);
 		}
 	}
 }

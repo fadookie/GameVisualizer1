@@ -9,6 +9,9 @@ public class ShooterController : Reactive {
 	ShooterPlayerController[] playerControllers = new ShooterPlayerController[NUM_PLAYERS];
 	List<OTAnimatingSprite> enemies = new List<OTAnimatingSprite>();
 	List<BulletClusterController> bulletClusters = new List<BulletClusterController>(15); //15 seems like a reasonable upper bound for number of clusters on-screen at once
+	private uint _beatCount = 0;
+	private uint _clusterCount = 0;
+	float clusterRadiusDelta = 0;
 
 		
 	// Use this for initialization
@@ -31,27 +34,56 @@ public class ShooterController : Reactive {
 		enemies.Add(enemySprite);
 		
 		//Spawn test cluster
-		GameObject clusterObject = new GameObject("cluster1", typeof(BulletClusterController));
-		clusterObject.transform.parent = transform;
-//		clusterObject.transform.position = Vector3.zero;
-		BulletClusterController cluster = clusterObject.GetComponent<BulletClusterController>();
-		if (cluster == null) throw new System.Exception("BulletClusterController cannot be null");
-		
-		bulletClusters.Add(cluster);
+		//spawnCluster();
 		
 		ReactiveManager.Instance.registerListener(this, getChannels());
 	}
 	
 	// Update is called once per frame
 	void Update () {
-	
+		clusterRadiusDelta = 10 * Time.deltaTime;
+		//Cleanup
+		for (int i = bulletClusters.Count - 1; i >= 0; i--) {
+			BulletClusterController cluster = bulletClusters[i];
+			/*
+			if (cluster.radius > 100) {
+				Debug.Log("Remove cluster ");
+				bulletClusters.RemoveAt(i);
+				Destroy(cluster.gameObject);
+			} else {
+			*/
+				//Move it
+				cluster.radiusDelta = clusterRadiusDelta;
+			//}
+		}
 	}
+	
+	void spawnClusterAtPosition(Vector3 position) {
+		GameObject clusterObject = new GameObject(string.Format("cluster_{0}", ++_clusterCount), typeof(BulletClusterController));
+		clusterObject.transform.parent = transform;
+		clusterObject.transform.Translate(position);//localPosition = position; //FIXME: Why the fuck doesn't this work?
+//		clusterObject.transform.position = Vector3.zero;
+		BulletClusterController cluster = clusterObject.GetComponent<BulletClusterController>();
+		if (cluster != null) {//throw new System.Exception("BulletClusterController cannot be null");
+			bulletClusters.Add(cluster);
+		}
+	}
+	
 	#region Reactive event handlers
 	
 	public override void reactToAmplitude(uint channel, float amp, bool overThreshold) {
 	}
 	
 	public override void reactToBeat(float currentBPM) {
+		_beatCount++;
+		/*
+		if (_beatCount % 2 == 0) {
+			clusterRadiusDelta = 10 * Time.deltaTime;
+		} else {
+			clusterRadiusDelta = 0;
+		}
+		*/
+		if (_beatCount % 4 == 0) spawnClusterAtPosition(new Vector3(_beatCount * 10, 0, 0));
 		foreach(OTAnimatingSprite enemySprite in enemies){
 			enemySprite.position = new Vector2(enemySprite.position.x + 1, enemySprite.position.y);
 		}
