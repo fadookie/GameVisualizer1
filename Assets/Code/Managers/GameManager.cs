@@ -119,12 +119,14 @@ public class GameManager : MonoSingleton<GameManager>
 					break;
 				case GameState.Visualizer:
 					if (_movieController != null) {
+					/*
 						_movieController.toggleVisibility = currentPreset.toggleVisibility;
 						_movieController.togglePlayback = currentPreset.togglePlayback;
 						_movieController.cycleMaterial = currentPreset.cycleMaterial;
 						_movieController.visibilityFrequency = currentPreset.visibilityFrequency;
 						_movieController.playbackFrequency = currentPreset.playbackFrequency;
 						_movieController.materialFrequency = currentPreset.materialFrequency;
+						*/
 						_movieController.visualizerMode(currentPreset.playMovieOnStart);
 					}
 					switch (currentPreset.gameType) {
