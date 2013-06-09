@@ -49,6 +49,8 @@ public class RoadController : Reactive {
 	public float hueOffsetTest = 0.3f;
 	private PlayerVehicleController _playerVehicleController;
 	
+	private WiimoteReceiver _moteRecvr;
+	public int OSCPort = 8876;
 	#region MonoBehaviour handlers
 
 	// Use this for initialization
@@ -72,6 +74,9 @@ public class RoadController : Reactive {
 		height = 1000;
 		*/
 		
+		_moteRecvr = WiimoteReceiver.Instance;
+		_moteRecvr.connect(OSCPort);
+		
 		//Init _polyRenderQueue and _originalMaterialColors
 		Material[] mats = gameObject.GetComponent<MeshRenderer>().materials;
 		for (int i = 0; i < NUM_SUBMESH_TYPES; i++) {
@@ -80,6 +85,7 @@ public class RoadController : Reactive {
 		}
 		
 		resetRoad();
+		
 		//guiTexture.texture = _texture;
 		
 		/*
@@ -110,13 +116,30 @@ public class RoadController : Reactive {
 				? PlayerVehicleController.VehicleOrientation.UPHILL_STRAIGHT 
 				: PlayerVehicleController.VehicleOrientation.STRAIGHT;
 		
+		bool moteLeft = false;
+		bool moteRight = false;
+		if(_moteRecvr.wiimotes.ContainsKey(1)) // If mote 1 is connected
+		{
+			Wiimote m = _moteRecvr.wiimotes[1];
+	
+			//Debug.Log("WIIMOTE FOUND");
+			if (m.BUTTON_UP >= 1.0f) {
+				moteLeft = true;
+				//Debug.Log("MOTE UP (left)");
+			} else if (m.BUTTON_DOWN >= 1.0f) {
+				moteRight = true;
+				//Debug.Log("MOTE DOWN (right)");
+			}
+		} else {
+			//Debug.Log("Wiimote not detected on osc port " + OSCPort + ".");
+		}
 		//FIXME: super hack since the rendering is currently inverted on the x axis, just flip player controls to compensate.
-		if (Input.GetKey(KeyCode.LeftArrow)) {
+		if (moteLeft || Input.GetKey(KeyCode.LeftArrow)) {
 			playerXOffset += dx;
 			orientation = isAscending
 				? PlayerVehicleController.VehicleOrientation.UPHILL_LEFT
 				: PlayerVehicleController.VehicleOrientation.LEFT;
-		} else if (Input.GetKey(KeyCode.RightArrow)) {
+		} else if (moteRight || Input.GetKey(KeyCode.RightArrow)) {
 			playerXOffset -= dx;
 			orientation = isAscending
 				? PlayerVehicleController.VehicleOrientation.UPHILL_RIGHT
